@@ -39,7 +39,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <main className="min-h-screen">{children}</main>
-          <footer className="bg-muted/50 py-12">
+          <footer className="bg-muted/50 py-8">
             <div className="container mx-auto px-4">
               <p className="text-center text-gray-200">
                 Copyright &copy; {new Date().getFullYear()}. Created by:{' '}
