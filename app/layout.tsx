@@ -38,7 +38,22 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <main className="min-h-screen">{children}</main>
+          <footer className="bg-muted/50 py-12">
+            <div className="container mx-auto px-4">
+              <p className="text-center text-gray-200">
+                Copyright &copy; {new Date().getFullYear()}. Created by:{' '}
+                <a
+                  className="underline"
+                  href="https://github.com/abhishek332"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Abhishek Porwal
+                </a>
+              </p>
+            </div>
+          </footer>
         </ThemeProvider>
       </body>
     </html>
