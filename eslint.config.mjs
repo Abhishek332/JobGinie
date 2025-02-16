@@ -38,7 +38,7 @@ const eslintConfig = [
 
     // Code Quality Rules
     'prefer-const': 'warn',
-    camelcase: ['error', { properties: 'never' }],
+    camelcase: ['error', { properties: 'never', ignoreDestructuring: true, ignoreImports: true }],
     'no-console': ['warn', { allow: ['warn', 'error'] }],
     'no-debugger': 'warn',
 
