@@ -1,0 +1,5 @@
+.github/
+.next/
+.swc/
+out/
+node_modules/
