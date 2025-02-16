@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint-fix": "next lint --fix",
+    "prettier-fix": "prettier --write \"**/*.{js,jsx,ts,tsx,json,mjs}\""
   },
   "dependencies": {
     "next": "15.1.7",
