@@ -58,7 +58,7 @@ const Header = () => {
 
         <div className="flex items-center space-x-2">
           <SignedIn>
-            <Link href="/dashboard">
+            <Link href="/market-trends">
               <Button variant="outline">
                 <NavTextWithIcon
                   iconStart={LayoutDashboard}
@@ -82,7 +82,7 @@ const Header = () => {
               <DropdownMenuContent>
                 <DropdownMenuItem>
                   <Link
-                    href="/resume"
+                    href="/resume-builder"
                     className="flex items-center gap-2"
                   >
                     <NavTextWithIcon
@@ -104,7 +104,7 @@ const Header = () => {
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Link
-                    href="/interview-prep"
+                    href="/interview-preparation"
                     className="flex items-center gap-2"
                   >
                     <NavTextWithIcon
