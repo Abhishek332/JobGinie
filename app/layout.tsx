@@ -41,7 +41,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <Header />
-            <main className="min-h-screen">{children}</main>
+            <main className="mt-16 min-h-[calc(100vh-150px)]">{children}</main>
             <footer className="bg-muted/50 py-8">
               <div className="container mx-auto px-4">
                 <p className="text-center text-gray-200">

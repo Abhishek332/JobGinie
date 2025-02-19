@@ -47,13 +47,17 @@ const Header = () => {
   return (
     <header className="fixed top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
       <nav className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/">
+        <Link
+          className="flex items-center gap-2"
+          href="/"
+        >
           <Image
             src="/assets/logo.webp"
             alt="JobGenie Logo"
             width={60}
             height={60}
           />
+          <h1 className="text-2xl font-bold">JobGenie</h1>
         </Link>
 
         <div className="flex items-center space-x-2">
