@@ -53,7 +53,7 @@ const HeroSection = () => {
             />
           </div>
           <div>
-            <h1 className="gradient-title animate-gradient text-5xl font-bold md:text-6xl lg:text-7xl xl:text-8xl">
+            <h1 className="gradient-title text-5xl font-bold md:text-6xl lg:text-7xl xl:text-8xl">
               Your AI Coach For
               <br />
               Job Hunt
