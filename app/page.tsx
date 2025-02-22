@@ -1,3 +1,4 @@
+import FAQs from '@/components/faqs';
 import Features from '@/components/features';
 import HeroSection from '@/components/hero-section';
 import './globals.css';
@@ -14,6 +15,7 @@ export default function Home() {
       <StatsSection />
       <HowItWorks />
       <Testimonials />
+      <FAQs />
     </>
   );
 }
