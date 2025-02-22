@@ -5,7 +5,7 @@ interface SectionWrapperProps {
   className?: string;
 }
 
-const SectionWrapper = ({ children, className }: SectionWrapperProps) => {
+const SectionWrapper = ({ children, className = '' }: SectionWrapperProps) => {
   return (
     <section className={`w-full bg-background py-12 md:py-24 ${className}`}>
       <div className="container mx-auto px-4 md:px-6">{children}</div>

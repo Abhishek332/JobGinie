@@ -8,7 +8,7 @@ import { testimonials } from '@/data/testimonial';
 
 const Testimonials = () => {
   return (
-    <SectionWrapper>
+    <SectionWrapper className="bg-muted/50">
       <SectionHeader title="What Our Users Say" />
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-3">
         {testimonials.map((testimonial, index) => (

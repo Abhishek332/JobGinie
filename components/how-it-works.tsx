@@ -6,7 +6,7 @@ import { howItWorks } from '@/data/howItWorks';
 
 const HowItWorks = () => {
   return (
-    <SectionWrapper className="bg-card">
+    <SectionWrapper>
       <SectionHeader
         title="How It Works"
         desc="Four simple steps to accelerate your career growth"
