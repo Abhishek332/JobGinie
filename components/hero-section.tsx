@@ -38,7 +38,7 @@ const HeroSection = () => {
   return (
     <section className="size-full">
       <div className="text-center">
-        <div className="hero-image-wrapper mx-auto flex items-center justify-between px-10 py-28 md:px-28 md:py-36">
+        <div className="hero-image-wrapper mx-auto flex items-center justify-between px-10 py-28 md:px-28">
           <div
             ref={imageRef1}
             className="hero-image hidden md:block"
