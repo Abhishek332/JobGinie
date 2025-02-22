@@ -38,7 +38,7 @@ const HeroSection = () => {
   return (
     <section className="size-full">
       <div className="text-center">
-        <div className="hero-image-wrapper mx-auto flex items-center justify-between px-10 py-28 md:px-28">
+        <div className="hero-image-wrapper flex items-center justify-between px-10 py-28 md:px-28">
           <div
             ref={imageRef1}
             className="hero-image hidden md:block"
@@ -52,7 +52,7 @@ const HeroSection = () => {
               objectFit="contain"
             />
           </div>
-          <div>
+          <div className="mx-auto">
             <h1 className="gradient-title text-5xl font-bold md:text-6xl lg:text-7xl xl:text-8xl">
               Your AI Coach For
               <br />
@@ -68,7 +68,7 @@ const HeroSection = () => {
                   size="lg"
                   className="px-8"
                 >
-                  Get Started
+                  Boost Your Career with AI
                 </Button>
               </Link>
             </div>
@@ -93,7 +93,7 @@ const HeroSection = () => {
           >
             <Image
               src="/assets/banner2.webp"
-              width={1280}
+              width={920}
               height={720}
               alt="Dashboard Preview"
               className="mx-auto rounded-lg border shadow-2xl"
