@@ -104,6 +104,7 @@ body {
 
 .hero-image-wrapper {
   perspective: 1000px;
+  @apply mb-10;
 }
 
 .hero-image {

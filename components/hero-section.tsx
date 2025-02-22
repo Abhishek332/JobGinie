@@ -62,7 +62,7 @@ const HeroSection = () => {
               Analyze Resumes, Track Market Trends, and Ace Mock Interviews –
               All in One Place!
             </p>
-            <div className="my-10">
+            <div className="mt-10">
               <Link href="/market-trends">
                 <Button
                   size="lg"

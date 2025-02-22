@@ -1,6 +1,6 @@
 import React from 'react';
 
-import SectionTitle from './section-title';
+import SectionHeader from './section-header';
 import { Card, CardContent } from './ui/card';
 import { features } from '@/data/features';
 
@@ -8,7 +8,7 @@ const Features = () => {
   return (
     <section className="w-full bg-background py-12 md:py-24 lg:py-32">
       <div className="container mx-auto px-4 md:px-6">
-        <SectionTitle title="Powerful Features for Your Career Success" />
+        <SectionHeader title="Powerful Features for Your Career Success" />
         <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           {features.map((feature, index) => (
             <Card
