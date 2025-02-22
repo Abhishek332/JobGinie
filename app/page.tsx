@@ -5,6 +5,7 @@ import './globals.css';
 import HowItWorks from '@/components/how-it-works';
 import StatsSection from '@/components/stats-section';
 import Testimonials from '@/components/testimonials';
+import CallToActions from '@/components/cta';
 
 export default function Home() {
   return (
@@ -16,6 +17,7 @@ export default function Home() {
       <HowItWorks />
       <Testimonials />
       <FAQs />
+      <CallToActions />
     </>
   );
 }
