@@ -37,8 +37,8 @@ const HeroSection = () => {
 
   return (
     <section className="size-full">
-      <div className="space-y-6 text-center">
-        <div className="hero-image-wrapper mx-auto flex items-center justify-between px-10 py-36 md:px-28">
+      <div className="text-center">
+        <div className="hero-image-wrapper mx-auto flex items-center justify-between px-10 py-28 md:px-28 md:py-36">
           <div
             ref={imageRef1}
             className="hero-image hidden md:block"
@@ -46,8 +46,8 @@ const HeroSection = () => {
             <Image
               src="/assets/hero.png"
               alt="Hero Image"
-              width={400}
-              height={400}
+              width={450}
+              height={450}
               className="-scale-x-100"
               objectFit="contain"
             />
@@ -80,13 +80,13 @@ const HeroSection = () => {
             <Image
               src="/assets/hero.png"
               alt="Hero Image"
-              width={400}
-              height={400}
+              width={450}
+              height={450}
               objectFit="contain"
             />
           </div>
         </div>
-        <div className="hero-image-wrapper mt-5 md:mt-0">
+        <div className="hero-image-wrapper">
           <div
             ref={imageRef3}
             className="hero-image"
