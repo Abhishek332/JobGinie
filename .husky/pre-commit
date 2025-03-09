@@ -1,2 +1,19 @@
-npm run lint-fix
-npm run prettier-fix
+# Get list of staged files matching the required extensions
+FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(js|jsx|ts|tsx|json|css|scss|cjs|mjs)$' || true)
+
+# If there are files to lint and format, process them
+if [ -n "$FILES" ]; then
+  echo "Running lint and prettier on staged files..."
+  
+  # Run ESLint with --fix only on JS/TS files
+  echo "$FILES" | grep -E '\.(js|jsx|ts|tsx)$' | tr '\n' ' ' | xargs --no-run-if-empty next lint --fix --file
+  
+  # Run Prettier on all matched files
+  echo "$FILES" | tr '\n' ' ' | xargs --no-run-if-empty npx prettier --write
+  
+  # Add back the formatted files to staging
+  echo "$FILES" | tr '\n' ' ' | xargs --no-run-if-empty git add
+fi
+
+# Exit successfully
+exit 0
