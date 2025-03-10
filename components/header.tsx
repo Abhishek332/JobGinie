@@ -18,6 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import { checkUser } from '@/lib/checkUser';
 
 interface NavTextWithIconProps {
   title: string;
@@ -43,7 +44,13 @@ const NavTextWithIcon = ({
   );
 };
 
-const Header = () => {
+const Header = async () => {
+  try {
+    await checkUser();
+  } catch (error) {
+    console.error(error);
+  }
+
   return (
     <header className="fixed top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
       <nav className="container mx-auto flex h-16 items-center justify-between px-4">
