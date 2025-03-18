@@ -1,28 +1,28 @@
 // Combined Industry Trends and Salary Insights
 model IndustryInsight {
-  id            String    @id @default(cuid())
-  industry      String    @unique  // The industry this data belongs to (e.g., "tech-software-development")
+  id            String            @id @default(cuid())
+  industry      String            @unique  // The industry this data belongs to (e.g., "tech-software-development")
   
   // Users in this industry
   users         User[]
   
   // Salary data
-  salaryRanges  Json[]    // Array of { role: string, min: float, max: float, median: float, location: string? }
+  salaryRanges  Json[]            @default([])   // Array of { role: string, min: float, max: float, median: float, location: string? }
   
   // Industry trends
-  growthRate    Float     // Industry growth rate
-  demandLevel   DemandLevel
-  topSkills     String[]  // Most in-demand skills
+  growthRate    Float?             @default(0)   // Industry growth rate
+  demandLevel   DemandLevel?       @default(Medium)
+  topSkills     String[]           @default([])  // Most in-demand skills
   
   // Market conditions
-  marketOutlook MarketOutlook
-  keyTrends     String[]  // Array of current industry trends
+  marketOutlook MarketOutlook?     @default(Neutral)
+  keyTrends     String[]           @default([]) // Array of current industry trends
   
   // Learning suggestions
-  recommendedSkills String[]  // Skills recommended for the industry
+  recommendedSkills String[]       @default([])  // Skills recommended for the industry
   
-  lastUpdated   DateTime  @default(now())
-  nextUpdate    DateTime  // Scheduled update time
+  lastUpdated   DateTime           @default(now())
+  nextUpdate    DateTime           // Scheduled update time
 
   @@index([industry])
 }
