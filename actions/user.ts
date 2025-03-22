@@ -22,13 +22,19 @@ const checkUserAuth = async () => {
   return dbUser;
 };
 
-export async function updateUser(data: unknown) {
+interface UpdateUserData {
+  industry: string;
+  experience: number;
+  bio: string;
+  skills: string[];
+}
+
+export async function updateUser(data: UpdateUserData) {
   const dbUser = await checkUserAuth();
 
   try {
     const res = await db.$transaction(
       async (tx) => {
-        console.log('abhishek', tx);
         const industryInsights = await tx.industryInsight.findUnique({
           where: {
             industry: data.industry,
