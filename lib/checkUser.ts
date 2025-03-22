@@ -32,7 +32,7 @@ export const checkUser = async () => {
 
     return newUser;
   } catch (error) {
-    console.log((error as Error).message);
+    console.error((error as Error).message);
     throw new Error('Failed to get user details');
   }
 };
