@@ -68,9 +68,8 @@ export async function updateUser(data: unknown) {
 
     return res.updatedUser;
   } catch {
-    throw new Error('Failed to update use profile.');
+    throw new Error('Failed to update user profile.');
   }
-  return dbUser;
 }
 
 export async function getUserOnboardingStatus() {
