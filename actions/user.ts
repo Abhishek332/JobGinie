@@ -25,7 +25,7 @@ const checkUserAuth = async () => {
 interface UpdateUserData {
   industry: string;
   experience: number;
-  bio: string;
+  bio?: string;
   skills: string[];
 }
 
