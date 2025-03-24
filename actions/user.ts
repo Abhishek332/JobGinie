@@ -26,7 +26,7 @@ interface UpdateUserData {
   industry: string;
   experience: number;
   bio?: string;
-  skills: string[];
+  skills?: string[];
 }
 
 export async function updateUser(data: UpdateUserData) {
@@ -72,9 +72,14 @@ export async function updateUser(data: UpdateUserData) {
       },
     );
 
-    return res.updatedUser;
-  } catch {
-    throw new Error('Failed to update user profile.');
+    return {
+      success: true,
+      ...res,
+    };
+  } catch (error) {
+    throw new Error(
+      'Failed to update user profile.' + (error as Error).message,
+    );
   }
 }
 
