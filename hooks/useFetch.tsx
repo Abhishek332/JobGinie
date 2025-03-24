@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-const useFetch = <T extends (...args: unknown[]) => Promise<unknown>>(
-  cb: T,
-) => {
-  const [data, setData] = useState<unknown | null>(null);
-  const [loading, setLoading] = useState(true);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const useFetch = <T extends (...args: any[]) => Promise<any>>(cb: T) => {
+  const [data, setData] = useState<Awaited<ReturnType<T>> | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   const fn = async (...args: Parameters<T>) => {
