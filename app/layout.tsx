@@ -2,8 +2,9 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-
 import './globals.css';
+import { Toaster } from 'sonner';
+
 import Header from '@/components/header';
 import { ThemeProvider } from '@/components/theme-provider';
 
@@ -42,6 +43,7 @@ export default function RootLayout({
           >
             <Header />
             <main className="mt-16 min-h-[calc(100vh-150px)]">{children}</main>
+            <Toaster richColors />
             <footer className="bg-background py-8">
               <div className="container mx-auto px-4">
                 <p className="text-center text-gray-200">
