@@ -1,26 +1,7 @@
 'use server';
 
-import { auth } from '@clerk/nextjs/server';
-
+import { checkUserAuth } from './validate-user-auth';
 import { db } from '@/lib/prisma';
-
-const checkUserAuth = async () => {
-  const { userId } = await auth();
-
-  if (!userId) {
-    throw new Error('Unauthorized.');
-  }
-
-  const dbUser = await db.user.findUnique({
-    where: {
-      clerkUserId: userId,
-    },
-  });
-
-  if (!dbUser) throw new Error('User not found');
-
-  return dbUser;
-};
 
 interface UpdateUserData {
   industry: string;
