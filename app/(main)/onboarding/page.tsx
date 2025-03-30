@@ -9,7 +9,7 @@ const Onboarding = async () => {
   const { isOnboarded } = await getUserOnboardingStatus();
 
   if (isOnboarded) {
-    redirect('/dashboard');
+    redirect('/');
   }
 
   return (
