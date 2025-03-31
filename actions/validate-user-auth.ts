@@ -13,6 +13,9 @@ export const checkUserAuth = async () => {
     where: {
       clerkUserId: userId,
     },
+    include: {
+      industryInsight: true,
+    },
   });
 
   if (!dbUser) throw new Error('User not found');
