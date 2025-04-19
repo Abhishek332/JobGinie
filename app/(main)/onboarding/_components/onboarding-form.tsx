@@ -81,7 +81,7 @@ const OnboardingForm = ({ industries }: OnboardingFormProps) => {
   useEffect(() => {
     if (updateResult?.success && !updateLoading) {
       toast.success('Profile completed successfully!');
-      router.push('/market-trends');
+      router.push('/industry-trends');
     }
   }, [router, updateResult, updateLoading]);
 

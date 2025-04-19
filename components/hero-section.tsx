@@ -59,11 +59,11 @@ const HeroSection = () => {
               Job Hunt
             </h1>
             <p className="mx-auto mt-8 max-w-[600px] text-muted-foreground md:text-xl">
-              Analyze Resumes, Track Market Trends, and Ace Mock Interviews –
+              Analyze Resumes, Track Industry Trends, and Ace Mock Interviews –
               All in One Place!
             </p>
             <div className="mt-10">
-              <Link href="/market-trends">
+              <Link href="/industry-trends">
                 <Button
                   size="lg"
                   className="px-8"

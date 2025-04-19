@@ -15,7 +15,7 @@ export const features = [
   },
   {
     icon: <LineChart className="mb-4 size-10 text-primary" />,
-    title: 'Real-Time Market Trends',
+    title: 'Real-Time Industry Trends',
     description:
       'Access up-to-date hiring trends, salary benchmarks, and industry growth insights.',
   },

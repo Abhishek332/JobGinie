@@ -10,7 +10,7 @@ export const faqs = [
       'JobGenie uses AI to scan your resume for strengths, weaknesses, and keyword optimization. It compares your resume against job descriptions to suggest improvements in structure, phrasing, and ATS compatibility, helping you stand out to recruiters.',
   },
   {
-    question: 'What kind of market trends does JobGenie provide?',
+    question: 'What kind of industry trends does JobGenie provide?',
     answer:
       'JobGenie continuously analyzes job market data to provide insights on in-demand skills, salary benchmarks, hiring trends, and industry shifts. This helps you tailor your job search strategy based on real-time market conditions.',
   },

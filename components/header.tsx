@@ -69,11 +69,11 @@ const Header = async () => {
 
         <div className="flex items-center space-x-2">
           <SignedIn>
-            <Link href="/market-trends">
+            <Link href="/industry-trends">
               <Button variant="outline">
                 <NavTextWithIcon
                   iconStart={LayoutDashboard}
-                  title="Market Trends"
+                  title="Industry Trends"
                   hideTextForSmallScreen
                 />
               </Button>

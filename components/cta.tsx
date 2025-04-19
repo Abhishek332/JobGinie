@@ -24,7 +24,7 @@ const CallToActions = () => {
           </Button>
         </Link>
         <Link
-          href="/market-trends"
+          href="/industry-trends"
           passHref
         >
           <Button
