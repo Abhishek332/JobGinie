@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { RingLoader } from 'react-spinners';
+import { BarLoader } from 'react-spinners';
 
 const PagesLayout = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -9,10 +9,10 @@ const PagesLayout = ({ children }: { children: React.ReactNode }) => {
       </div>
       <Suspense
         fallback={
-          <RingLoader
+          <BarLoader
             className="mt-4"
             color="gray"
-            size={50}
+            width={'100%'}
           />
         }
       >
