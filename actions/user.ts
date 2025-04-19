@@ -1,5 +1,6 @@
 'use server';
 
+import { getIndustryTrends } from './industry-trends';
 import { checkUserAuth } from './validate-user-auth';
 import { db } from '@/lib/prisma';
 
@@ -23,12 +24,12 @@ export async function updateUser(data: UpdateUserData) {
         });
 
         if (!industryInsights) {
+          // get industry insights from AI
+          const newInsights = await getIndustryTrends(data.industry);
           await tx.industryInsight.create({
             data: {
               industry: data.industry,
-              growthRate: 0,
-              demandLevel: 'Medium',
-              marketOutlook: 'Neutral',
+              ...newInsights,
               nextUpdate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             },
           });

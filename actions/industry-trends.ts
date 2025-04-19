@@ -7,7 +7,7 @@ import { checkUserAuth } from './validate-user-auth';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-export async function getIndustryInsights(industry: string) {
+export async function getIndustryTrends(industry: string) {
   const dbUser = await checkUserAuth();
 
   if (!isEmpty(dbUser.industryInsight)) {
