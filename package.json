@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "NODE_OPTIONS='--inspect' next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint-fix": "next lint --fix",
@@ -47,10 +47,12 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/date-fns": "^2.5.3",
     "@types/lodash": "^4.17.16",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/recharts": "^1.8.29",
     "eslint": "^9.20.1",
     "eslint-config-next": "^15.1.7",
     "eslint-config-prettier": "^10.0.1",
