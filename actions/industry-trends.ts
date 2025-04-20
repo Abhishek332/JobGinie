@@ -10,7 +10,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 export async function getIndustryTrends(industry: string) {
   const dbUser = await checkUserAuth();
 
-  if (!isEmpty(dbUser.industryInsight)) {
+  if (isEmpty(dbUser.industryInsight)) {
     try {
       const prompt = `
           Analyze the current state of the ${industry} industry and provide insights in ONLY the following JSON format without any additional notes or explanations:
@@ -49,4 +49,6 @@ export async function getIndustryTrends(industry: string) {
       throw new Error('Failed to generate industry insights');
     }
   }
+
+  return dbUser.industryInsight;
 }
