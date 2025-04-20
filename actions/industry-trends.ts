@@ -39,7 +39,7 @@ export async function getIndustryTrends(industry: string) {
       });
 
       const cleanedupResponse = (response.text ?? '{}').replaceAll(
-        /```|json/g,
+        /```|json|\n/g,
         '',
       );
       const jsonResponse = JSON.parse(cleanedupResponse);
