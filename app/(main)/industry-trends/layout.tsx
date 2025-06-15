@@ -12,7 +12,7 @@ const PagesLayout = ({ children }: { children: React.ReactNode }) => {
           <BarLoader
             className="mt-4"
             color="gray"
-            width={'100%'}
+            // width={'100%'}
           />
         }
       >
