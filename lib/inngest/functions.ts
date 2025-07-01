@@ -1,7 +1,8 @@
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
 import { db } from '../prisma';
 import { inngest } from './client';
+import { IndustryInsightSchemaForLLM } from '@/llm-schemas/industryInsights.schema';
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -29,63 +30,7 @@ export const generateIndustryInsights = inngest.createFunction(
           contents: `Analyze the current state of the ${industry} industry and provide insights`,
           config: {
             responseMimeType: 'application/json',
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                salaryRanges: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      role: {
-                        type: Type.STRING,
-                      },
-                      min: {
-                        type: Type.NUMBER,
-                      },
-                      max: {
-                        type: Type.NUMBER,
-                      },
-                      median: {
-                        type: Type.NUMBER,
-                      },
-                      location: {
-                        type: Type.STRING,
-                      },
-                    },
-                  },
-                },
-                growthRate: {
-                  type: Type.NUMBER,
-                },
-                demandLevel: {
-                  type: Type.STRING,
-                  enum: ['High', 'Medium', 'Low'],
-                },
-                topSkills: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.STRING,
-                  },
-                },
-                marketOutlook: {
-                  type: Type.STRING,
-                  enum: ['Positive', 'Neutral', 'Negative'],
-                },
-                keyTrends: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.STRING,
-                  },
-                },
-                recommendedSkills: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.STRING,
-                  },
-                },
-              },
-            },
+            responseSchema: IndustryInsightSchemaForLLM,
           },
         });
       });
