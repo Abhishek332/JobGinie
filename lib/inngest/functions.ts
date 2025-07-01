@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 
 import { db } from '../prisma';
 import { inngest } from './client';
@@ -23,38 +23,76 @@ export const generateIndustryInsights = inngest.createFunction(
     });
 
     for (const { industry } of industries) {
-      const prompt = `
-          Analyze the current state of the ${industry} industry and provide insights in ONLY the following JSON format without any additional notes or explanations:
-          {
-            "salaryRanges": [
-              { "role": "string", "min": number, "max": number, "median": number, "location": "string" }
-            ],
-            "growthRate": number,
-            "demandLevel": "High" | "Medium" | "Low",
-            "topSkills": ["skill1", "skill2"],
-            "marketOutlook": "Positive" | "Neutral" | "Negative",
-            "keyTrends": ["trend1", "trend2"],
-            "recommendedSkills": ["skill1", "skill2"]
-          }
-          
-          IMPORTANT: Return ONLY the JSON. No additional text, notes, or markdown formatting.
-          Include at least 5 common roles for salary ranges.
-          Growth rate should be a percentage.
-          Include at least 5 skills and trends.
-        `;
-
       const response = await step.ai.wrap('calling-gemini', async () => {
         return genAI.models.generateContent({
           model: 'gemini-1.5-flash',
-          contents: prompt,
-          // tokenLimit: 4096,
+          contents: `Analyze the current state of the ${industry} industry and provide insights`,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                salaryRanges: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      role: {
+                        type: Type.STRING,
+                      },
+                      min: {
+                        type: Type.NUMBER,
+                      },
+                      max: {
+                        type: Type.NUMBER,
+                      },
+                      median: {
+                        type: Type.NUMBER,
+                      },
+                      location: {
+                        type: Type.STRING,
+                      },
+                    },
+                  },
+                },
+                growthRate: {
+                  type: Type.NUMBER,
+                },
+                demandLevel: {
+                  type: Type.STRING,
+                  enum: ['High', 'Medium', 'Low'],
+                },
+                topSkills: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.STRING,
+                  },
+                },
+                marketOutlook: {
+                  type: Type.STRING,
+                  enum: ['Positive', 'Neutral', 'Negative'],
+                },
+                keyTrends: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.STRING,
+                  },
+                },
+                recommendedSkills: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.STRING,
+                  },
+                },
+              },
+            },
+          },
         });
       });
 
-      const cleanedupResponse = (response.text ?? '{}')
-        .replaceAll(/```|json|\n/g, '')
-        .trim();
-      const insights = JSON.parse(cleanedupResponse);
+      const insights = JSON.parse(
+        response.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}',
+      );
 
       await step.run(`Update ${industry} insights`, async () => {
         await db.industryInsight.update({
