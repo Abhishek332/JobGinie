@@ -18,4 +18,6 @@ model User {
   assessments Assessment[]
   resume      Resume?
   coverLetter CoverLetter[]
+  resumeAnalysis ResumeAnalysis[]
+  mockInterview MockInterview[]
 }
