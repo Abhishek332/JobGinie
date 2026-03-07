@@ -4,6 +4,7 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/inngest(.*)',
+  '/api/verify-llm',
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
