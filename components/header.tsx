@@ -1,23 +1,10 @@
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
-import {
-  ChevronDown,
-  FileText,
-  GraduationCap,
-  LayoutDashboard,
-  PenBox,
-  StarsIcon,
-} from 'lucide-react';
+import { FileText, LayoutDashboard } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
 
 import { Button } from './ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu';
 import { checkUser } from '@/lib/checkUser';
 
 interface NavTextWithIconProps {
@@ -79,53 +66,15 @@ const Header = async () => {
               </Button>
             </Link>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button>
-                  <NavTextWithIcon
-                    iconStart={StarsIcon}
-                    title="Helper Tools"
-                    iconEnd={ChevronDown}
-                    hideTextForSmallScreen
-                  />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem>
-                  <Link
-                    href="/resume-builder"
-                    className="flex items-center gap-2"
-                  >
-                    <NavTextWithIcon
-                      iconStart={FileText}
-                      title="Resume Builder"
-                    />
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link
-                    href="/ai-cover-leter"
-                    className="flex items-center gap-2"
-                  >
-                    <NavTextWithIcon
-                      iconStart={PenBox}
-                      title="Cover Letter Generator"
-                    />
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link
-                    href="/interview-preparation"
-                    className="flex items-center gap-2"
-                  >
-                    <NavTextWithIcon
-                      iconStart={GraduationCap}
-                      title="Interview Prep"
-                    />
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Link href="/resume-for-job">
+              <Button variant="outline">
+                <NavTextWithIcon
+                  iconStart={FileText}
+                  title="Resume for this job"
+                  hideTextForSmallScreen
+                />
+              </Button>
+            </Link>
           </SignedIn>
 
           <SignedOut>
