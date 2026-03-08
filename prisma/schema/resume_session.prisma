@@ -1,0 +1,20 @@
+model ResumeSession {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Job context (Step 3)
+  jobTitle       String  @db.VarChar(500)
+  jobDescription String  @db.Text
+  yearsRequired  Int?    // Optional: years of experience required
+
+  // Later steps
+  parsedResumeText  String? @db.Text
+  analysisResult    Json?
+  generatedResumeJson Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}

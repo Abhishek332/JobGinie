@@ -29,7 +29,7 @@ function getApiKey(): string {
 }
 
 export async function generateStructuredWithGemini<T = unknown>(
-  options: GenerateStructuredOptions<T>,
+  options: GenerateStructuredOptions,
 ): Promise<T> {
   const { prompt, systemPrompt, schema, model = DEFAULT_MODEL } = options;
   const apiKey = getApiKey();

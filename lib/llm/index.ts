@@ -21,7 +21,7 @@ function getProvider(): LLMProvider {
  * Provider is selected via LLM_PROVIDER env (default: gemini).
  */
 export async function generateStructured<T = unknown>(
-  options: import('./types').GenerateStructuredOptions<T>,
+  options: import('./types').GenerateStructuredOptions,
 ): Promise<T> {
   const provider = getProvider();
 

@@ -71,8 +71,26 @@ export const coverLetterSchema = z.object({
   jobDescription: z.string().min(1, 'Job description is required'),
 });
 
+/** Job details for resume-for-job flow (Step 3). */
+export const jobDetailsSchema = z.object({
+  jobTitle: z
+    .string()
+    .min(1, 'Job title is required')
+    .max(500, 'Job title is too long'),
+  jobDescription: z.string().min(1, 'Job description is required'),
+  yearsRequired: z
+    .string()
+    .optional()
+    .transform((val) =>
+      val === '' || val === undefined ? undefined : parseInt(val, 10),
+    )
+    .pipe(z.number().min(0).max(50).optional()),
+});
+
 export type OnboardingFormData = z.infer<typeof onboardingSchema>;
 export type ContactFormData = z.infer<typeof contactSchema>;
 export type EntryFormData = z.infer<typeof entrySchema>;
 export type ResumeFormData = z.infer<typeof resumeSchema>;
 export type CoverLetterFormData = z.infer<typeof coverLetterSchema>;
+export type JobDetailsFormData = z.infer<typeof jobDetailsSchema>;
+export type JobDetailsFormInput = z.input<typeof jobDetailsSchema>;

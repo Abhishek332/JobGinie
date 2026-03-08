@@ -7,10 +7,6 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { updateUser } from '@/actions/user';
-import {
-  OnboardingFormData,
-  onboardingSchema,
-} from '@/app/lib/validation.schema';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -32,6 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import useFetch from '@/hooks/useFetch';
+import { OnboardingFormData, onboardingSchema } from '@/lib/validation.schema';
 
 interface Industry {
   id: string;
