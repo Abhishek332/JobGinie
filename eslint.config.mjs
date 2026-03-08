@@ -1,9 +1,11 @@
 import { FlatCompat } from '@eslint/eslintrc';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+const tsconfigPath = join(__dirname, 'tsconfig.json');
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
@@ -23,7 +25,7 @@ const eslintConfig = [
     ],
     parser: '@typescript-eslint/parser',
     parserOptions: {
-      project: './tsconfig.json',
+      project: tsconfigPath,
     },
     extends: [
       'next/core-web-vitals',
@@ -32,6 +34,12 @@ const eslintConfig = [
       'plugin:prettier/recommended', // sets up both eslint-plugin-prettier and eslint-config-prettier in one go
     ],
     plugins: ['prettier', 'unused-imports', 'tailwindcss', 'import'],
+    settings: {
+      'import/resolver': {
+        typescript: { project: tsconfigPath },
+        node: true,
+      },
+    },
     globals: {
       JSX: 'readonly',
       React: 'readonly',
