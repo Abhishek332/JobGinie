@@ -7,13 +7,15 @@
 import { NextResponse } from 'next/server';
 
 import { generateStructured } from '@/lib/llm';
-import { VERIFY_LLM_SCHEMA } from '@/lib/llm/providers/gemini';
+
+const VERIFY_SCHEMA = { message: 'string' };
 
 export async function GET() {
   try {
     const result = await generateStructured<{ message: string }>({
-      prompt: 'Reply with exactly one short greeting sentence.',
-      schema: VERIFY_LLM_SCHEMA as object,
+      prompt:
+        'Reply with exactly one short greeting sentence in JSON with a single key "message".',
+      schema: VERIFY_SCHEMA,
     });
     return NextResponse.json({
       ok: true,

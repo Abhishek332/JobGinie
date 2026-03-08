@@ -15,7 +15,13 @@ const IndustryTrends = async () => {
 
   return (
     <div>
-      <DashboardView insights={industryInsights} />
+      <DashboardView
+        insights={
+          industryInsights as React.ComponentProps<
+            typeof DashboardView
+          >['insights']
+        }
+      />
     </div>
   );
 };

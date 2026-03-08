@@ -1,32 +1,30 @@
 'use server';
 
-import { GoogleGenAI } from '@google/genai';
 import { isEmpty } from 'lodash';
 
 import { checkUserAuth } from './validate-user-auth';
-import { IndustryInsightSchemaForLLM } from '@/llm-schemas/industryInsights.schema';
+import { generateStructured } from '@/lib/llm';
+import {
+  IndustryInsightFromLLM,
+  IndustryInsightSchemaForLLM,
+} from '@/llm-schemas/industryInsights.schema';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+type IndustryInsight = Awaited<
+  ReturnType<typeof checkUserAuth>
+>['industryInsight'];
 
-export async function getIndustryTrends(industry: string) {
+export async function getIndustryTrends(
+  industry: string,
+): Promise<IndustryInsight | IndustryInsightFromLLM | null> {
   const dbUser = await checkUserAuth();
 
   if (isEmpty(dbUser.industryInsight)) {
     try {
-      const response = await ai.models.generateContent({
+      return generateStructured<IndustryInsightFromLLM>({
+        prompt: `Analyze the current state of the ${industry} industry and provide insights. Return JSON only.`,
+        schema: IndustryInsightSchemaForLLM as object,
         model: 'gemini-1.5-flash',
-        contents: `Analyze the current state of the ${industry} industry and provide insights`,
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: IndustryInsightSchemaForLLM,
-        },
       });
-
-      const jsonResponse = JSON.parse(
-        response.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}',
-      );
-
-      return jsonResponse;
     } catch (error) {
       console.error('Error generating industry insights:', error);
       throw new Error('Failed to generate industry insights');

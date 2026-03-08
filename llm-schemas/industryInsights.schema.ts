@@ -1,61 +1,47 @@
-// will use this schema for forcing LLM to generate content in a specific format
+// Schema hint for LLM to generate industry insights in a specific format (used with LangChain).
 
-import { Type } from '@google/genai';
+/** Shape returned by the LLM (and valid for Prisma industryInsight.create data). */
+export type IndustryInsightFromLLM = {
+  salaryRanges?: {
+    role: string;
+    min: number;
+    max: number;
+    median: number;
+    location?: string;
+  }[];
+  growthRate?: number;
+  demandLevel?: 'High' | 'Medium' | 'Low';
+  topSkills?: string[];
+  marketOutlook?: 'Positive' | 'Neutral' | 'Negative';
+  keyTrends?: string[];
+  recommendedSkills?: string[];
+};
 
+/** Plain-object schema hint for generateStructured (stringified into the prompt). */
 export const IndustryInsightSchemaForLLM = {
-  type: Type.OBJECT,
+  type: 'object',
   properties: {
     salaryRanges: {
-      type: Type.ARRAY,
+      type: 'array',
       items: {
-        type: Type.OBJECT,
+        type: 'object',
         properties: {
-          role: {
-            type: Type.STRING,
-          },
-          min: {
-            type: Type.NUMBER,
-          },
-          max: {
-            type: Type.NUMBER,
-          },
-          median: {
-            type: Type.NUMBER,
-          },
-          location: {
-            type: Type.STRING,
-          },
+          role: { type: 'string' },
+          min: { type: 'number' },
+          max: { type: 'number' },
+          median: { type: 'number' },
+          location: { type: 'string' },
         },
       },
     },
-    growthRate: {
-      type: Type.NUMBER,
-    },
-    demandLevel: {
-      type: Type.STRING,
-      enum: ['High', 'Medium', 'Low'],
-    },
-    topSkills: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.STRING,
-      },
-    },
+    growthRate: { type: 'number' },
+    demandLevel: { type: 'string', enum: ['High', 'Medium', 'Low'] },
+    topSkills: { type: 'array', items: { type: 'string' } },
     marketOutlook: {
-      type: Type.STRING,
+      type: 'string',
       enum: ['Positive', 'Neutral', 'Negative'],
     },
-    keyTrends: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.STRING,
-      },
-    },
-    recommendedSkills: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.STRING,
-      },
-    },
+    keyTrends: { type: 'array', items: { type: 'string' } },
+    recommendedSkills: { type: 'array', items: { type: 'string' } },
   },
-};
+} as const;

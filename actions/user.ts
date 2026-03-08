@@ -26,10 +26,14 @@ export async function updateUser(data: UpdateUserData) {
         if (!industryInsights) {
           // get industry insights from AI
           const newInsights = await getIndustryTrends(data.industry);
+          const payload =
+            newInsights && typeof newInsights === 'object'
+              ? (newInsights as Record<string, unknown>)
+              : {};
           await tx.industryInsight.create({
             data: {
               industry: data.industry,
-              ...newInsights,
+              ...payload,
               nextUpdate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             },
           });

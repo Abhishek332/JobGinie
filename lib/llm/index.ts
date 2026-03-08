@@ -1,9 +1,10 @@
 /**
  * Public API for the LLM abstraction.
  * Use only this module and types from lib/llm in feature code (actions, pages).
+ * Backed by LangChain; provider switch via env and credentials only.
  */
 
-import { generateStructuredWithGemini } from './providers/gemini';
+import { generateStructuredWithLangChain } from './providers/langchain-gemini';
 import type { LLMProvider } from './types';
 
 export type { GenerateStructuredOptions, LLMProvider } from './types';
@@ -18,7 +19,7 @@ function getProvider(): LLMProvider {
 
 /**
  * Call the configured LLM with a prompt and optional schema; returns parsed structured output.
- * Provider is selected via LLM_PROVIDER env (default: gemini).
+ * Provider is selected via LLM_PROVIDER env (default: gemini). Uses LangChain under the hood.
  */
 export async function generateStructured<T = unknown>(
   options: import('./types').GenerateStructuredOptions,
@@ -27,13 +28,13 @@ export async function generateStructured<T = unknown>(
 
   switch (provider) {
     case 'gemini':
-      return generateStructuredWithGemini<T>(options);
+      return generateStructuredWithLangChain<T>(options);
     case 'openai':
     case 'ollama':
       throw new Error(
         `LLM provider "${provider}" is not implemented yet. Set LLM_PROVIDER=gemini or add implementation in lib/llm/providers.`,
       );
     default:
-      return generateStructuredWithGemini<T>(options);
+      return generateStructuredWithLangChain<T>(options);
   }
 }

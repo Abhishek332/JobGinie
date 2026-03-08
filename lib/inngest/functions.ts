@@ -1,10 +1,10 @@
-import { GoogleGenAI } from '@google/genai';
-
 import { db } from '../prisma';
 import { inngest } from './client';
-import { IndustryInsightSchemaForLLM } from '@/llm-schemas/industryInsights.schema';
-
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+import { generateStructured } from '@/lib/llm';
+import {
+  IndustryInsightFromLLM,
+  IndustryInsightSchemaForLLM,
+} from '@/llm-schemas/industryInsights.schema';
 
 export const generateIndustryInsights = inngest.createFunction(
   {
@@ -24,26 +24,23 @@ export const generateIndustryInsights = inngest.createFunction(
     });
 
     for (const { industry } of industries) {
-      const response = await step.ai.wrap('calling-gemini', async () => {
-        return genAI.models.generateContent({
-          model: 'gemini-1.5-flash',
-          contents: `Analyze the current state of the ${industry} industry and provide insights`,
-          config: {
-            responseMimeType: 'application/json',
-            responseSchema: IndustryInsightSchemaForLLM,
-          },
-        });
-      });
-
-      const insights = JSON.parse(
-        response.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}',
+      const insights = await step.run(
+        `Generate insights for ${industry}`,
+        async () =>
+          generateStructured<IndustryInsightFromLLM>({
+            prompt: `Analyze the current state of the ${industry} industry and provide insights. Return JSON only.`,
+            schema: IndustryInsightSchemaForLLM as object,
+            model: 'gemini-1.5-flash',
+          }),
       );
 
       await step.run(`Update ${industry} insights`, async () => {
+        const payload =
+          insights && typeof insights === 'object' ? insights : {};
         await db.industryInsight.update({
           where: { industry },
           data: {
-            ...insights,
+            ...payload,
             lastUpdated: new Date(),
             nextUpdate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           },
