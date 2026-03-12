@@ -30,7 +30,6 @@ export const generateIndustryInsights = inngest.createFunction(
           generateStructured<IndustryInsightFromLLM>({
             prompt: `Analyze the current state of the ${industry} industry and provide insights. Return JSON only.`,
             schema: IndustryInsightSchemaForLLM as object,
-            model: 'gemini-1.5-flash',
           }),
       );
 

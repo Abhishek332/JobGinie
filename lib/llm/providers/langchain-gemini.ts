@@ -8,7 +8,7 @@ import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 
 import type { GenerateStructuredOptions } from '../types';
 
-const DEFAULT_MODEL = 'gemini-1.5-flash';
+const FALLBACK_MODEL = 'gemini-2.0-flash';
 
 function getApiKey(): string {
   const key =
@@ -23,10 +23,20 @@ function getApiKey(): string {
   return key.trim();
 }
 
+function getModel(): string {
+  const envModel = (
+    process.env.GEMINI_MODEL ??
+    process.env.LLM_MODEL ??
+    ''
+  ).trim();
+  return envModel || FALLBACK_MODEL;
+}
+
 export async function generateStructuredWithLangChain<T = unknown>(
   options: GenerateStructuredOptions,
 ): Promise<T> {
-  const { prompt, systemPrompt, schema, model = DEFAULT_MODEL } = options;
+  const { prompt, systemPrompt, schema, model: optionModel } = options;
+  const model = optionModel ?? getModel();
   const apiKey = getApiKey();
 
   const chat = new ChatGoogleGenerativeAI({
