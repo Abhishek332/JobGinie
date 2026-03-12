@@ -1,8 +1,9 @@
 'use client';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -42,6 +43,7 @@ interface OnboardingFormProps {
 
 const OnboardingForm = ({ industries }: OnboardingFormProps) => {
   const [selectedIndustry, setSelectedIndustry] = useState<Industry>();
+  const submittingRef = useRef(false);
   const router = useRouter();
   const {
     loading: updateLoading,
@@ -62,16 +64,20 @@ const OnboardingForm = ({ industries }: OnboardingFormProps) => {
   const [watchIndustry] = watch(['industry']);
 
   const onSubmit = async (data: OnboardingFormData) => {
+    if (submittingRef.current || updateLoading) return;
+    submittingRef.current = true;
     try {
       const formattedIndustry = `${data.industry}-${data.subIndustry}`
         .toLowerCase()
         .replace(/ /g, '-');
-      updateUserFn({
+      await updateUserFn({
         ...data,
         industry: formattedIndustry,
       });
     } catch (error) {
       console.error('Onboarding Error: ', (error as Error).message);
+    } finally {
+      submittingRef.current = false;
     }
   };
 
