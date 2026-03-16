@@ -71,7 +71,7 @@ export const coverLetterSchema = z.object({
   jobDescription: z.string().min(1, 'Job description is required'),
 });
 
-/** Job details for resume-for-job flow (Step 3). */
+/** Job details for resume-for-job flow (Step 3). API expects yearsRequired as string; schema transforms to number for DB. */
 export const jobDetailsSchema = z.object({
   jobTitle: z
     .string()
@@ -87,10 +87,33 @@ export const jobDetailsSchema = z.object({
     .pipe(z.number().min(0).max(50).optional()),
 });
 
+/** Form-only schema: validates without transforming yearsRequired, so we submit strings to the API. */
+export const jobDetailsFormSchema = z.object({
+  jobTitle: z
+    .string()
+    .min(1, 'Job title is required')
+    .max(500, 'Job title is too long'),
+  jobDescription: z.string().min(1, 'Job description is required'),
+  yearsRequired: z
+    .string()
+    .optional()
+    .refine(
+      (val) =>
+        val === '' ||
+        val === undefined ||
+        (/^\d+$/.test(val ?? '') &&
+          (() => {
+            const n = parseInt(val!, 10);
+            return !Number.isNaN(n) && n >= 0 && n <= 50;
+          })()),
+      'Must be between 0 and 50',
+    ),
+});
+
 export type OnboardingFormData = z.infer<typeof onboardingSchema>;
 export type ContactFormData = z.infer<typeof contactSchema>;
 export type EntryFormData = z.infer<typeof entrySchema>;
 export type ResumeFormData = z.infer<typeof resumeSchema>;
 export type CoverLetterFormData = z.infer<typeof coverLetterSchema>;
 export type JobDetailsFormData = z.infer<typeof jobDetailsSchema>;
-export type JobDetailsFormInput = z.input<typeof jobDetailsSchema>;
+export type JobDetailsFormInput = z.infer<typeof jobDetailsFormSchema>;

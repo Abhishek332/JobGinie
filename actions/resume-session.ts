@@ -4,7 +4,7 @@ import { checkUserAuth } from './validate-user-auth';
 import { db } from '@/lib/prisma';
 import {
   jobDetailsSchema,
-  type JobDetailsFormData,
+  type JobDetailsFormInput,
 } from '@/lib/validation.schema';
 
 export type CreateResumeSessionResult =
@@ -12,7 +12,7 @@ export type CreateResumeSessionResult =
   | { success: false; error: string };
 
 export async function createResumeSession(
-  input: JobDetailsFormData,
+  input: JobDetailsFormInput,
 ): Promise<CreateResumeSessionResult> {
   const parsed = jobDetailsSchema.safeParse(input);
   if (!parsed.success) {

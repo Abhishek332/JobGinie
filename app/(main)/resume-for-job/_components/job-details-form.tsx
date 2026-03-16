@@ -21,8 +21,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import useFetch from '@/hooks/useFetch';
 import {
-  jobDetailsSchema,
-  type JobDetailsFormData,
+  jobDetailsFormSchema,
+  type JobDetailsFormInput,
 } from '@/lib/validation.schema';
 
 export default function JobDetailsForm() {
@@ -33,16 +33,16 @@ export default function JobDetailsForm() {
     register,
     formState: { errors },
     handleSubmit,
-  } = useForm<JobDetailsFormData>({
-    resolver: zodResolver(jobDetailsSchema),
+  } = useForm<JobDetailsFormInput>({
+    resolver: zodResolver(jobDetailsFormSchema),
     defaultValues: {
       jobTitle: '',
       jobDescription: '',
-      yearsRequired: undefined,
+      yearsRequired: '',
     },
   });
 
-  const onSubmit = (formData: JobDetailsFormData) => {
+  const onSubmit = (formData: JobDetailsFormInput) => {
     submitSession(formData);
   };
 
@@ -110,9 +110,9 @@ export default function JobDetailsForm() {
               </Label>
               <Input
                 id="yearsRequired"
-                type="number"
-                min={0}
-                max={50}
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
                 placeholder="e.g. 5"
                 {...register('yearsRequired')}
               />
