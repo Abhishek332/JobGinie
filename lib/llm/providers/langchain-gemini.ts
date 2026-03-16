@@ -8,7 +8,7 @@ import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 
 import type { GenerateStructuredOptions } from '../types';
 
-const FALLBACK_MODEL = 'gemini-2.0-flash';
+const FALLBACK_MODEL = 'gemini-2.0-flash-lite';
 
 function getApiKey(): string {
   const key =

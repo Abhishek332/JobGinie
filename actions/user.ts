@@ -21,8 +21,29 @@ function isRateLimitError(error: unknown): boolean {
   );
 }
 
-export async function updateUser(data: UpdateUserData) {
-  const dbUser = await checkUserAuth();
+function toErrorMessage(error: unknown): string {
+  if (isRateLimitError(error)) {
+    return 'Rate limit exceeded. Please try again in a few minutes.';
+  }
+  return (
+    (error instanceof Error ? error.message : String(error)).slice(0, 200) ||
+    'Failed to update user profile.'
+  );
+}
+
+export type UpdateUserResult =
+  | { success: true; updatedUser: unknown; industryInsights: unknown }
+  | { success: false; error: string };
+
+export async function updateUser(
+  data: UpdateUserData,
+): Promise<UpdateUserResult> {
+  let dbUser;
+  try {
+    dbUser = await checkUserAuth();
+  } catch {
+    return { success: false, error: 'Please sign in to continue.' };
+  }
 
   try {
     const res = await db.$transaction(
@@ -48,7 +69,6 @@ export async function updateUser(data: UpdateUserData) {
               },
             });
           } catch {
-            // LLM failed (e.g. 429 quota) – still complete onboarding; create minimal row so industry exists
             await tx.industryInsight.create({
               data: {
                 industry: data.industry,
@@ -85,15 +105,10 @@ export async function updateUser(data: UpdateUserData) {
       ...res,
     };
   } catch (error) {
-    if (isRateLimitError(error)) {
-      throw new Error(
-        'Rate limit exceeded. Please try again in a few minutes.',
-      );
-    }
-    throw new Error(
-      'Failed to update user profile. ' +
-        (error instanceof Error ? error.message : String(error)),
-    );
+    return {
+      success: false,
+      error: toErrorMessage(error),
+    };
   }
 }
 
