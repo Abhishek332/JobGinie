@@ -1,34 +1,35 @@
 'use server';
 
-import { isEmpty } from 'lodash';
+import type { IndustryInsight } from '@prisma/client';
 
 import { checkUserAuth } from './validate-user-auth';
 import { generateStructured } from '@/lib/llm';
+import { db } from '@/lib/prisma';
 import {
   IndustryInsightFromLLM,
   IndustryInsightSchemaForLLM,
 } from '@/llm-schemas/industryInsights.schema';
 
-type IndustryInsight = Awaited<
-  ReturnType<typeof checkUserAuth>
->['industryInsight'];
-
 export async function getIndustryTrends(
   industry: string,
 ): Promise<IndustryInsight | IndustryInsightFromLLM | null> {
-  const dbUser = await checkUserAuth();
+  await checkUserAuth();
 
-  if (isEmpty(dbUser.industryInsight)) {
-    try {
-      return generateStructured<IndustryInsightFromLLM>({
-        prompt: `Analyze the current state of the ${industry} industry and provide insights. Return JSON only.`,
-        schema: IndustryInsightSchemaForLLM as object,
-      });
-    } catch (error) {
-      console.error('Error generating industry insights:', error);
-      throw new Error('Failed to generate industry insights');
-    }
+  const existing = await db.industryInsight.findUnique({
+    where: { industry },
+  });
+
+  if (existing) {
+    return existing;
   }
 
-  return dbUser.industryInsight;
+  try {
+    return await generateStructured<IndustryInsightFromLLM>({
+      prompt: `Analyze the current state of the ${industry} industry and provide insights. Return JSON only.`,
+      schema: IndustryInsightSchemaForLLM as object,
+    });
+  } catch (error) {
+    console.error('Error generating industry insights:', error);
+    throw new Error('Failed to generate industry insights');
+  }
 }

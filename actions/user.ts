@@ -2,6 +2,7 @@
 
 import { getIndustryTrends } from './industry-trends';
 import { checkUserAuth } from './validate-user-auth';
+import { checkUser } from '@/lib/checkUser';
 import { db } from '@/lib/prisma';
 
 interface UpdateUserData {
@@ -136,20 +137,17 @@ export async function updateUser(
 }
 
 export async function getUserOnboardingStatus() {
-  const dbUser = await checkUserAuth();
-
   try {
-    const userWithIndustry = await db.user.findUnique({
-      where: {
-        id: dbUser.id,
-      },
-      select: {
-        industry: true,
-      },
-    });
+    const dbUser = await checkUser();
+    if (!dbUser) {
+      return { isOnboarded: false as const, industry: null };
+    }
 
-    return { isOnboarded: !!userWithIndustry?.industry };
+    return {
+      isOnboarded: !!dbUser.industry,
+      industry: dbUser.industry ?? null,
+    };
   } catch {
-    throw new Error('Failed to get user onboarding status.');
+    return { isOnboarded: false as const, industry: null };
   }
 }

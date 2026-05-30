@@ -27,9 +27,14 @@ export async function createResumeSession(
 
   const { jobTitle, jobDescription, yearsRequired } = parsed.data;
 
+  let user;
   try {
-    const user = await checkUserAuth();
-    console.log('user', user);
+    user = await checkUserAuth();
+  } catch {
+    return { success: false, error: 'Please sign in to continue.' };
+  }
+
+  try {
     const session = await db.resumeSession.create({
       data: {
         userId: user.id,
@@ -38,11 +43,9 @@ export async function createResumeSession(
         yearsRequired: yearsRequired ?? null,
       },
     });
-    console.log('session', session);
     return { success: true, sessionId: session.id };
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to create session';
-    return { success: false, error: message };
+    console.error('Create resume session error:', error);
+    return { success: false, error: 'Failed to create session.' };
   }
 }

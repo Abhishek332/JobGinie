@@ -6,12 +6,13 @@ import { getIndustryTrends } from '@/actions/industry-trends';
 import { getUserOnboardingStatus } from '@/actions/user';
 
 const IndustryTrends = async () => {
-  const { isOnboarded } = await getUserOnboardingStatus();
-  const industryInsights = await getIndustryTrends('Software Development');
+  const { isOnboarded, industry } = await getUserOnboardingStatus();
 
-  if (!isOnboarded) {
+  if (!isOnboarded || !industry) {
     redirect('/onboarding');
   }
+
+  const industryInsights = await getIndustryTrends(industry);
 
   return (
     <div>
