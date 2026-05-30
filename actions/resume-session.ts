@@ -29,6 +29,7 @@ export async function createResumeSession(
 
   try {
     const user = await checkUserAuth();
+    console.log('user', user);
     const session = await db.resumeSession.create({
       data: {
         userId: user.id,
@@ -37,6 +38,7 @@ export async function createResumeSession(
         yearsRequired: yearsRequired ?? null,
       },
     });
+    console.log('session', session);
     return { success: true, sessionId: session.id };
   } catch (error) {
     const message =

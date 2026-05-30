@@ -46,34 +46,55 @@ export async function updateUser(
   }
 
   try {
+    // LLM work must run outside `$transaction` — interactive tx timeouts (default 5–15s)
+    // cannot span long external calls or the connection expires mid-flight.
+    const industryRow = await db.industryInsight.findUnique({
+      where: { industry: data.industry },
+    });
+
+    // Same gate as before: only call the LLM when there is no IndustryInsight row for this industry.
+    let insightCreateExtras: Record<string, unknown> | undefined;
+    if (!industryRow) {
+      try {
+        const newInsights = await getIndustryTrends(data.industry);
+        insightCreateExtras =
+          newInsights && typeof newInsights === 'object'
+            ? (newInsights as Record<string, unknown>)
+            : {};
+      } catch {
+        insightCreateExtras = undefined;
+      }
+    }
+
     const res = await db.$transaction(
       async (tx) => {
-        const industryInsights = await tx.industryInsight.findUnique({
-          where: {
-            industry: data.industry,
-          },
-        });
+        // Inside the tx: ensure row exists (re-check for concurrent creators), then update user,
+        // then load the row again — same outcome as the previous create → update → findUnique flow.
+        const stillMissing = !(await tx.industryInsight.findUnique({
+          where: { industry: data.industry },
+          select: { industry: true },
+        }));
 
-        if (!industryInsights) {
+        if (stillMissing) {
+          const nextUpdate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
           try {
-            const newInsights = await getIndustryTrends(data.industry);
-            const payload =
-              newInsights && typeof newInsights === 'object'
-                ? (newInsights as Record<string, unknown>)
-                : {};
-            await tx.industryInsight.create({
-              data: {
+            await tx.industryInsight.upsert({
+              where: { industry: data.industry },
+              create: {
                 industry: data.industry,
-                ...payload,
-                nextUpdate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                ...(insightCreateExtras ?? {}),
+                nextUpdate,
               },
+              update: {},
             });
           } catch {
-            await tx.industryInsight.create({
-              data: {
+            await tx.industryInsight.upsert({
+              where: { industry: data.industry },
+              create: {
                 industry: data.industry,
-                nextUpdate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                nextUpdate,
               },
+              update: {},
             });
           }
         }
@@ -93,6 +114,7 @@ export async function updateUser(
         const industryInsightsAfter = await tx.industryInsight.findUnique({
           where: { industry: data.industry },
         });
+
         return { updatedUser, industryInsights: industryInsightsAfter };
       },
       {
@@ -105,6 +127,7 @@ export async function updateUser(
       ...res,
     };
   } catch (error) {
+    console.error('Update User Error: ', (error as Error).message);
     return {
       success: false,
       error: toErrorMessage(error),
