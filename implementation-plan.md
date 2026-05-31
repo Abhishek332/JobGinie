@@ -1,459 +1,503 @@
 # JobGinie – Implementation Plan  
-## Resume Fit + Gap Analysis + Smart Resume Builder (Demo-Ready)
+## AI Job Application Copilot (Full-Stack, Portfolio-Ready)
 
-This document is the **single source of truth** for implementing the priority feature. When you say "implement Step N", the implementation will follow this plan. Complete steps in order; after each step: implement → review → feedback → fix → commit → next step.
+This document is the **single source of truth** for building JobGinie. When you say **"implement Step N"**, follow this plan exactly. After each step: implement → review → feedback → fix → commit → next step.
 
-**Implementation checklist (Steps 0–12):** See the table at the end of this document. Tick `[x]` as you complete each step.
-
----
-
-## Current scope & phased approach
-
-- **Target:** End-to-end demoable in **1 week**. Only the **resume flow** (USP) is in scope; all other features are **hidden** and their **code paths must not run** (not just UI hidden). We finish the top feature first, then cleanup, then extend.
-- **Phase 1 (now):** Plan and finish the **top-most feature** – resume flow (Steps 0–12) – using **LangChain** for LLM. One flow: Job details → Upload → Parse → Fit/Gap analysis → Build resume → Preview → Edit → Download.
-- **Phase 2 (after demo):** **Cleanup** – remove or disable old/unnecessary features and code that is not required for the demo. No dead code or running paths for hidden features.
-- **Phase 3 (later):** **New features** – agentic flows, MCP, chat-with-resume, etc. Product extends only after Phase 1 and 2 are done.
-- **Architecture:** Code must stay **clear, maintainable, and scalable** so the product can grow without tech debt. Follow the rules below like a senior fullstack engineer + architect (single LLM abstraction, layered structure, no feature logic coupled to a specific provider or library).
+**Checklist:** See the table at the end. Tick `[x]` as you complete each step.
 
 ---
 
-## Goals
+## Product vision
 
-- **Scope:** One flow: Job details → Resume PDF upload → Parse → Fit + Gap analysis → "Build my resume?" + ATS/AI explainer → Generated resume → Preview → Edit → Download. Demo-ready. Other features hidden; their flows do not run in code.
-- **Cost:** ₹0 – free APIs only (e.g. Gemini free tier). No paid services.
-- **Provider switch:** All LLM usage behind **LangChain**. When one provider’s free credits end, switch via **config/env and credentials only**; no code change. LangChain handles provider-specific APIs and structured output. We do not use LangChain "memory" or chat caching for resume analysis (any caching is application-level, per plan below).
-- **Code:** Clear architecture, scalability, maintainability. No feature logic coupled to a specific LLM or PDF library.
-- **Server:** Actions run on the server (parse, LLM, DB). For demo + free tier this is acceptable. If hosting quota becomes a concern later, consider background jobs (e.g. Inngest) or client-side PDF parse; not required for initial demo.
+**One-line pitch:** JobGinie helps you win **one specific job application** — match analysis, grounded bullet fixes, tailored resume, and application tracking.
+
+**Not building:** Generic AI resume writer, auto-apply bots, full job board, commodity cover-letter generator, or mock interviews in v1.
+
+**Building:** A full-stack **application copilot** — paste a job → upload resume → get match score + actionable fixes → edit tailored resume → download PDF → track the application.
+
+### Why this creates real user value (market-backed)
+
+| User pain (2026) | JobGinie response |
+|------------------|-------------------|
+| Spray-and-pray applications with no tracking | Application tracker per job |
+| Resume keywords don't match JD → invisible in ATS search | Fit/gap analysis + bullet rewrites using JD language |
+| Generic AI resumes get rejected (62% reject unpersonalized AI) | Anti-hallucination: only rewrite facts from user's resume |
+| Multi-column PDFs break parsing (~34% format failures) | ATS format check on upload |
+| India: Naukri headline/skills matter as much as resume | Phase 2: Naukri/LinkedIn export snippets |
+| Users pay for diagnosis + fix, not score alone | Treatment loop: analyze → suggest → generate → edit → download |
+
+### Why this is strong on your resume (portfolio framing)
+
+When you ship Phase 1, you can honestly claim:
+
+- **Full-stack SaaS:** Next.js 15 App Router, React 19, TypeScript, shadcn/ui
+- **Auth & multi-tenant data:** Clerk + Prisma + PostgreSQL (Neon)
+- **AI engineering:** LangChain abstraction, structured JSON outputs, Zod validation, provider switch via env
+- **Document pipeline:** Server-side PDF parse (`pdf-parse`) + PDF generation (`@react-pdf/renderer`)
+- **Server architecture:** Server Actions, layered `lib/` services, typed contracts
+- **Background jobs:** Inngest cron (industry insights refresh — optional Phase 2 contextual use)
+- **Real user flow:** Sign up → profile → job application kit → AI analysis → editable output → export
+
+**Demo story for interviews:** *"I built an AI copilot that compares a resume to a job description, suggests grounded bullet rewrites, generates a tailored ATS-friendly resume, and tracks applications — with hallucination guardrails and a provider-agnostic LLM layer."*
 
 ---
 
-## Architecture Rules
+## Current status (May 2026)
+
+**Done (Foundation, Steps 0–5):** Env/LLM layer, nav cleanup, job details form, PDF upload + parse, fit/gap analysis backend.
+
+**Working path today:** Sign up → onboarding → **Resume for this job** → job details → upload PDF → analysis page **stub** (parsed text saved; analysis UI not wired).
+
+**Next (Step 6):** Wire analysis UI and complete the core application kit loop (Steps 6–14).
+
+**Existing but demoted:** Industry Trends dashboard — keep code, but Phase 1 home should become **Applications** / **New application**, not Industry Trends. Insights become contextual inside the job flow in Phase 2.
+
+**Legacy schema (no app code):** `Resume`, `ResumeAnalysis`, `CoverLetter`, `MockInterview`, `Assessment` — remove in Phase 3 cleanup.
+
+---
+
+## Phased roadmap
+
+| Phase | Goal | Steps | Outcome |
+|-------|------|-------|---------|
+| **Foundation** | Platform + data model | 0–5 | Done |
+| **Phase 1 — MVP** | End-to-end application kit | 6–14 | Demo-ready product; portfolio centerpiece |
+| **Phase 2 — Differentiation** | India + retention | 15–19 | Naukri export, interview prep, career profile |
+| **Phase 3 — Extend** | Optional growth | 20+ | Mock interview, analytics, cleanup |
+
+---
+
+## Goals & constraints
+
+- **Cost:** ₹0 for demo — Gemini free tier; no paid APIs required for Phase 1.
+- **LLM:** All AI via `lib/llm` (LangChain). Switch provider = env + credentials only.
+- **Trust:** Never invent experience. Every generated bullet must trace to parsed resume text.
+- **Architecture:** Layered, maintainable, scalable — senior full-stack quality throughout.
+- **Scope discipline:** Finish Phase 1 before Phase 2. No mock interview / auto-apply / job board in Phase 1.
+
+---
+
+## Architecture rules
 
 ### Do
 
-1. **LLM abstraction (LangChain)**
-   - All AI calls go through one module (e.g. `lib/llm` or `services/llm`) backed by **LangChain**. Feature code never imports Gemini/OpenAI/LangChain model classes directly; only the abstraction.
-   - One interface: e.g. `generateStructured<T>(prompt, systemPrompt?, schema): Promise<T>`. Provider chosen by env (e.g. `LLM_PROVIDER=gemini`). Switching provider = env and credentials only.
+1. **LLM abstraction** — All AI through `generateStructured<T>()` in `lib/llm`. No direct provider SDKs in feature code.
+2. **Single resume schema** — One `StructuredResume` JSON for preview, edit, and PDF. No duplicate models.
+3. **Server actions** — Mutations (upload, analyze, generate, save, track) on server; thin client.
+4. **Application session model** — `ResumeSession` = one job application attempt: job context + parsed resume + analysis + generated resume + status.
+5. **Structured AI + Zod** — LLM returns JSON; validate with Zod before persisting or showing.
+6. **Anti-hallucination** — Post-LLM validator: flag or reject bullets that introduce employers, dates, metrics, or skills not present in `parsedResumeText`.
+7. **Env-based config** — Keys, provider, flags in `.env.example`. No secrets in code.
+8. **Layered structure** — `app/` routes, `actions/` orchestration, `lib/` business logic, `components/` UI only.
+9. **Shared types** — `types/resume-flow.ts`, `types/application.ts` for cross-layer contracts.
 
-2. **Single source of truth for resume content**
-   - One structured JSON schema for the generated resume. Preview component and PDF generator both consume this JSON. No duplicate "display" vs "export" models.
+### Don't
 
-3. **Server actions for mutations**
-   - Form submit, upload, analysis, resume generation, save edits → server actions. Keep client thin; validation and DB on server.
-
-4. **Session / run model**
-   - One "resume session" (or "run") per flow: job context + parsed resume + analysis result + generated resume. Store in DB; link to user. Enables resume flow, history later.
-
-5. **Structured AI output**
-   - Analysis and resume generation both use a fixed JSON schema (Zod or TypeScript type). Parse and validate LLM response; never trust raw string for structure.
-
-6. **Env-based configuration**
-   - API keys, provider name, feature flags in env. Document in `.env.example`. No secrets in code.
-
-7. **Layered structure**
-   - `app/` – routes, pages, server actions that orchestrate.
-   - `lib/` or `services/` – LLM, PDF parse, shared utilities.
-   - `components/` – UI only; no direct DB or LLM calls (pass data as props or use server components where appropriate).
-   - `actions/` – server actions that call lib/services and DB.
-
-8. **Error handling**
-   - Server: throw or return `{ success: false, error: string }`; client shows message. Log on server; never expose stack to client.
-
-9. **Types**
-   - Shared types for job context, analysis result, resume schema in a dedicated file (e.g. `types/resume-flow.ts`). Use in actions, components, and LLM layer.
-
-### Don’t
-
-1. **No direct LLM SDK in feature code**
-   - Don’t import `@google/genai` or `openai`, or LangChain model classes in pages, components, or resume/analysis actions. Only the app's LLM abstraction (which uses LangChain under the hood).
-
-2. **No provider-specific logic in prompts**
-   - Prompts are plain text + schema. No "if Gemini do X, if OpenAI do Y" in the same function. Provider-specific handling only in the abstraction implementation.
-
-3. **No duplicate resume structure**
-   - Don’t maintain one shape for "preview" and another for "PDF". One schema, two renderers (React component + PDF).
-
-4. **No long procedural files**
-   - Split by responsibility: e.g. `parseResumePdf.ts`, `runAnalysis.ts`, `generateResume.ts`, each calling the LLM abstraction. Avoid one 500-line action file.
-
-5. **No hardcoded secrets or API keys**
-   - No keys in repo or in code. Env only.
-
-6. **No silent failures**
-   - Every user-facing path: loading state or clear error message. No empty screens or unhandled rejections.
-
-7. **No business logic in UI components**
-   - Components receive data and callbacks. Validation, API calls, and DB access in actions or lib. Exception: client-side validation for UX (e.g. required fields) in addition to server validation.
-
-8. **No PDF parsing on client**
-   - Parse PDF only on server (e.g. `pdf-parse`). Browser doesn’t need to send parsed content; upload file, server returns result or saves to session.
-
-9. **No LangChain/conversation "memory" for job+resume caching**
-   - LangChain’s "memory" is for chat context, not for caching analysis by job+resume. If you add caching, do it at application level (e.g. cache key = hash(jobDescription + jobTitle + resumeText)); return cached result only when **inputs are identical**. Re-analyze whenever job or resume content changes. Do not reuse a cached result for a different resume – that would be incorrect.
+1. No direct Gemini/OpenAI/LangChain model imports in pages or components.
+2. No provider-specific branching inside prompts.
+3. No client-side PDF parsing.
+4. No silent failures — loading + error states on every step.
+5. No generic AI resume from scratch — **tailor existing content only**.
+6. No LangChain "memory" for caching — use application-level cache keyed on `hash(job + resume)` if needed later.
+7. No building features not in the current phase without explicit approval.
 
 ---
 
-## Re-analysis and optional caching
+## Re-analysis & caching
 
-- **When to re-analyze:** Every time the **job** (title, description, YOE) or **resume** (uploaded PDF / parsed text) changes, run analysis again. Same company + same position but **different resume** → must re-analyze; there is no shortcut without returning wrong/stale data.
-- **When caching helps:** Only when the **exact same** job + same resume is submitted again (e.g. user re-uploads same file for same job, or retries). Then you can return the previous analysis (and optionally generated resume) without calling the LLM again – faster response, no duplicate cost.
-- **How to cache (optional, later):** Application-level cache: key = stable hash of `jobTitle + jobDescription + resumeText` (and optionally `userId`); value = analysis result (and optionally generated resume JSON). Use DB or a simple cache layer; **LangChain is not required** for this.
-- **Hallucination:** Caching does not increase LLM hallucination. Reusing a cached result only when inputs are identical is safe. Wrong results come from reusing cache when inputs changed – avoid that by re-analyzing whenever job or resume content changes.
-
----
-
-## Scalability & Maintainability
-
-- **Add a new LLM provider:** Add the provider in LangChain config and env; no change in analysis or resume generation code (LangChain handles provider-specific APIs).
-- **Change analysis schema:** Update one type and one prompt; all consumers use the same type.
-- **Add a new step in the flow:** Add a new route/step and a new action; existing steps keep their contracts (e.g. session id, job context, analysis, resume JSON).
-- **Switch PDF library:** Only `lib/pdf` (or equivalent) changes; upload and "parsed text" contract stay the same.
-- **Tests later:** Keep actions and lib functions pure where possible (input → output) so unit tests can be added without touching UI.
-- **Server cost / quota:** More server-side work uses more hosting quota (e.g. Vercel function duration). For demo + free tier this is acceptable. If limits are hit later, consider moving heavy steps (e.g. parse + LLM) to a background job (Inngest) so the request returns quickly, or offload PDF parsing to the client.
+- Re-analyze when **job** or **resume** content changes.
+- Cache analysis only when inputs are **identical** (same JD + same parsed text).
+- Re-upload clears stale `analysisResult` and `generatedResumeJson` (already implemented in `uploadResumePdf`).
 
 ---
 
-## Step-by-Step Implementation
+## Foundation (Steps 0–5) — DONE
+
+These steps are complete. Do not re-implement unless fixing bugs.
+
+| Step | Summary | Key files |
+|------|---------|-----------|
+| **0** Prep | Checklist, env docs, `.env.example` | `.env.example` |
+| **1** LLM layer | LangChain abstraction, verify endpoint | `lib/llm/`, `app/api/verify-llm/route.ts` |
+| **2** Nav | Hide incomplete features; resume entry | `components/header.tsx` |
+| **3** Job details | Form + `ResumeSession` create | `resume-for-job/page.tsx`, `actions/resume-session.ts` |
+| **4** Upload + parse | PDF upload, server parse, store text | `upload/page.tsx`, `lib/pdf/parseResumePdf.ts` |
+| **5** Analysis backend | Fit/gap LLM + `runResumeAnalysis` | `lib/resume/runAnalysis.ts`, `types/resume-flow.ts` |
 
 ---
 
-### Step 0: Prep
+## Phase 1 — MVP: Application Kit (Steps 6–14)
 
-**Goal:** Checklist and env strategy; no feature code yet.
-
-**Default LLM (documented):**
-- **Primary:** Gemini free tier via [Google AI Studio](https://aistudio.google.com/). Get API key there; no cost for demo usage within free limits.
-- **Fallback (optional, to be wired later):** Ollama (local). Run models locally with no API cost; add `ollama` as a provider in `lib/llm` when needed.
-
-**Env vars (see `.env.example`):**
-- `LLM_PROVIDER` – which provider to use: `gemini` (default), or later `openai`, `ollama`.
-- `GEMINI_API_KEY` or `GOOGLE_GENERATIVE_AI_API_KEY` – for Gemini. Either name is supported.
-- Later (when adding providers): `OPENAI_API_KEY`, `OLLAMA_BASE_URL` (e.g. `http://localhost:11434`).
-
-**Tasks:**
-
-- [x] **0.1** Add an "Implementation checklist" section (e.g. at the top of this file or in README) listing Steps 1–12; tick as you complete.
-- [x] **0.2** Decide default free LLM (e.g. Gemini free tier via Google AI Studio). Document in this plan. Optional: note a fallback (e.g. Ollama) to be wired later.
-- [x] **0.3** Document env vars: `LLM_PROVIDER`, `GEMINI_API_KEY` (or `GOOGLE_GENERATIVE_AI_API_KEY`), and any later vars for other providers. Update `.env.example` with these and short comments.
-
-**Deliverable:** Checklist + env documentation; `.env.example` updated.  
-**Commit message:** `chore: implementation checklist and env plan`
-
----
-
-### Step 1: LLM abstraction layer (LangChain)
-
-**Goal:** One provider-agnostic way to call an LLM for structured JSON, using **LangChain**. Feature code only uses this layer; switching provider = env and credentials only.
-
-**Tasks:**
-
-- [x] **1.1** Create `lib/llm/` (or `services/llm/`):
-  - **Types:** Define `LLMProvider` (e.g. `'gemini' | 'openai' | 'ollama'`) and `GenerateStructuredOptions<T>` (prompt, systemPrompt?, schema or schema description).
-  - **Interface:** `generateStructured<T>(options): Promise<T>`. Contract: given prompt + optional system prompt + schema, returns parsed and typed `T`. Throw or return `Result` on failure.
-- [x] **1.2** **Migrate to LangChain** (replace current Gemini-only impl):
-  - Use LangChain (e.g. `ChatGoogleGenerativeAI`, `withStructuredOutput`); no direct `@google/genai`. Provider by env.
-Gemini’s - [x] **1.3** Ensure **all** LLM usage goes through this layer: refactor `actions/industry-trends.ts`, `lib/inngest/functions.ts` (and any other direct Gemini/OpenAI calls) to use `generateStructured` or the LangChain-backed abstraction. For Phase 1, hidden features can be disabled so their code paths do not run; when re-enabled they must use the abstraction only.
-- [x] **1.4** Add a tiny **verification**: script or test that calls `generateStructured` with a trivial prompt and logs the result. Ensures env and provider work; later you can switch provider by changing env only. **Implemented:** GET `/api/verify-llm` – run dev server and open this URL to verify.
-
-**Files to create/update:**
-
-- `lib/llm/types.ts` – provider type, options, result type.
-- `lib/llm/index.ts` – public API: `generateStructured`.
-- `lib/llm/providers/langchain-gemini.ts` – LangChain-based Gemini implementation.
-- `app/api/verify-llm/route.ts` – verification endpoint.
-- `.env.example` – already updated in Step 0.
-
-**Don’t:** Put prompts for "analysis" or "resume" in this layer; only generic "prompt + schema → T".  
-**Commit message:** `feat: LLM abstraction via LangChain; provider switch by env only`
-
----
-
-### Step 2: Hide incomplete features in UI
-
-**Goal:** Nav shows only working flows; one clear entry for the new resume flow.
-
-**Tasks:**
-
-- [x] **2.1** In the header/nav component, remove or hide links for:
-  - Cover Letter Generator
-  - Interview Prep (and any other "coming soon" items).
-- [x] **2.2** Keep: Home and **one** entry for the resume feature (e.g. "Resume for this job"). **Hide** Industry Trends and other non-resume features for Phase 1; their routes/code paths must not run until Phase 2 cleanup and Phase 3 extensions.
-- [x] **2.3** Set that entry’s href to the route you will use (e.g. `/resume-for-job` or `/resume-builder`). If the page does not exist yet, you can add a minimal placeholder page that says "Resume flow – Step 3 will add the form", or leave the link and add the page in Step 3.
-
-**Files to update:**
-
-- `components/header.tsx` (or wherever nav is defined).
-- `app/(main)/resume-for-job/page.tsx` – minimal placeholder (added so link does not 404).
-
-**Commit message:** `chore: hide incomplete features in nav; add entry for resume-for-job flow`
-
----
-
-### Step 3: Job details form + route
-
-**Goal:** User can enter job title, JD, optional YOE and proceed to the next step; data is persisted for the flow.
-
-**Tasks:**
-
-- [x] **3.1** Create route: `app/(main)/resume-for-job/page.tsx` (or `resume-builder` – stick to one name).
-- [x] **3.2** Form fields:
-  - Job title (required, text).
-  - Job description (required, textarea).
-  - Years of experience required (optional, number).
-- [x] **3.3** Client-side validation (e.g. Zod schema) and server-side validation in the server action. On submit, call a server action that:
-  - Validates input.
-  - Creates or updates a "resume session" in DB (e.g. `ResumeSession` or use existing table with job context fields: `jobTitle`, `jobDescription`, `yearsRequired`). Link to current user.
-  - Returns `{ success: true, sessionId }` or redirects to next step with session in URL or cookie.
-- [x] **3.4** After success, redirect to upload step (e.g. `resume-for-job/upload` or same page with `step=2`). Ensure the next step can read the session (e.g. by `sessionId` in URL or from DB by user).
-
-**Data model (if new table):**
-
-- Example: `ResumeSession` with `id`, `userId`, `jobTitle`, `jobDescription`, `yearsRequired` (nullable), `createdAt`. Later steps add `parsedResumeText`, `analysisResult`, `generatedResumeJson`.
-
-**Files to create/update:**
-
-- `app/(main)/resume-for-job/page.tsx` – form and redirect.
-- `actions/resume-session.ts` or similar – create/update session, validate.
-- Prisma schema – new model or new fields if reusing existing.
-- Shared types for job context (e.g. in `types/resume-flow.ts`).
-
-**Commit message:** `feat: job details form and resume-for-job flow entry`
-
----
-
-### Step 4: Resume upload + PDF parsing
-
-**Goal:** User uploads a PDF; server parses it and stores text (and optionally simple structure) in the same session. No paid PDF API.
-
-**Tasks:**
-
-- [ ] **4.1** Upload step UI (new page or same flow, step 2):
-  - Accept one file: PDF only. Client-side: check `file.type` and size (e.g. max 5 MB). Show clear error if not PDF or too large.
-- [ ] **4.2** Upload: use a server action (or API route) that receives `FormData` with the file. Do not store the raw PDF long-term if avoiding cost; parse and store only text (and optional structured sections).
-- [ ] **4.3** Server-side parsing: use `pdf-parse` (or equivalent) in a dedicated module (e.g. `lib/pdf/parseResumePdf.ts`). Given a buffer, return `{ text: string }` or `{ text, sections? }`. Handle errors: corrupt PDF, password-protected, non-PDF. Throw or return `{ ok: false, error: string }`.
-- [ ] **4.4** After successful parse, associate result with the current session: save `parsedResumeText` (and optional `parsedStructured`) to the DB row for this session. Session identified by `sessionId` from Step 3 (from URL, cookie, or DB by user + latest session).
-- [ ] **4.5** Return success (and optionally redirect) to the analysis step, or return `{ success: true }` and let the client navigate to the analysis page.
-
-**Files to create/update:**
-
-- `app/(main)/resume-for-job/upload/page.tsx` or upload section in the same flow.
-- `lib/pdf/parseResumePdf.ts` – parse buffer → text (and optional structure).
-- Server action that: receives file, calls parser, saves to session in DB.
-- Prisma schema – add `parsedResumeText` (and optional `parsedStructured`) to session model.
-
-**Don’t:** Parse PDF on the client; no paid third-party PDF API.  
-**Commit message:** `feat: resume PDF upload and server-side parsing`
-
----
-
-### Step 5: Fit + gap analysis (backend)
-
-**Goal:** One server action that, given session (job + resume text), returns and persists structured fit + gaps using the LLM abstraction.
-
-**Tasks:**
-
-- [ ] **5.1** Define **analysis result type** (e.g. in `types/resume-flow.ts`):  
-  `fitScore: number`, `missingKeywords: string[]`, `skillGaps: string[]`, `experienceGaps: string[]`, `summaryParagraph: string`, `topRecommendations: string[]`.
-- [ ] **5.2** Create a function (e.g. in `lib/resume/runAnalysis.ts` or `actions/run-analysis.ts`) that:
-  - Input: `jobTitle`, `jobDescription`, `yearsRequired?`, `resumeText`.
-  - Builds one **analysis prompt** (plain text): e.g. "Compare this resume to this job description and return fit score, missing keywords, skill gaps, experience gaps, a short summary, and top 3–5 recommendations."
-  - Calls **only** `generateStructured<AnalysisResult>(...)` from the LLM layer with this prompt and the analysis schema. No direct Gemini/OpenAI import.
-  - Returns typed `AnalysisResult`.
-- [ ] **5.3** Expose a **server action** (e.g. `runResumeAnalysis(sessionId)`) that: loads session from DB, gets job + parsed text, calls the function above, saves result to session (e.g. `analysisResult` JSON column), returns result to client (or returns success and client fetches analysis).
-- [ ] **5.4** Persist analysis in the same session row (e.g. `analysisResult Json` or similar). Client will use this for the analysis UI and for the "build resume" step.
-
-**Files to create/update:**
-
-- `types/resume-flow.ts` – `AnalysisResult` type and schema for LLM.
-- `lib/resume/runAnalysis.ts` (or under `actions/`) – pure function that calls LLM abstraction.
-- Server action that loads session, runs analysis, saves to DB.
-- Prisma – `analysisResult` (or equivalent) on session model.
-
-**Commit message:** `feat: fit and gap analysis via LLM abstraction`
+**North-star metric:** User completes one real application kit — analysis → tailored resume → PDF download → saved in tracker.
 
 ---
 
 ### Step 6: Analysis result UI
 
-**Goal:** Show fit score, gaps, recommendations, ATS/AI explainer, and "Build my resume" CTA.
+**Goal:** Wire `runResumeAnalysis`, show fit score, gaps, recommendations, and CTA to build resume.
+
+**Status:** **Next step.**
 
 **Tasks:**
 
-- [ ] **6.1** Analysis page/step: after upload (and optional auto-trigger of analysis), call the analysis action or load analysis from session. Show loading state while analysis runs.
-- [ ] **6.2** Display:
-  - **Fit score** (e.g. 0–100) with a simple visual (circular progress or bar).
-  - **What’s missing:** missing keywords, skill gaps, experience gaps (use the schema from Step 5).
-  - **Top recommendations** and **summary** paragraph.
-- [ ] **6.3** Add a short **"How ATS & AI selection work"** block: 2–3 bullets on ATS (keywords, clear structure) and AI screening (relevance, clarity). Static content; no API. Can be expandable/collapsible.
-- [ ] **6.4** CTA button: **"Build my resume for this job"**. On click, navigate to the resume generation step (or trigger generation then navigate to preview). Session already has job + resume + analysis; next step will generate the resume JSON.
+- [ ] **6.1** Replace placeholder in `analysis/page.tsx`: auto-run `runResumeAnalysis(sessionId)` on load if no cached `analysisResult`; show loading ("Analyzing your resume…").
+- [ ] **6.2** Display: fit score (0–100 visual), missing keywords, skill gaps, experience gaps, summary, top recommendations.
+- [ ] **6.3** Static **"How ATS & AI screening work"** block (2–3 bullets). No API.
+- [ ] **6.4** CTA: **"Build tailored resume"** → navigates to generation step (Step 10).
+- [ ] **6.5** Extend `getResumeSessionForUser` to return `analysisResult`, `jobDescription`, `yearsRequired`.
 
-**Files to create/update:**
+**Files:**
 
-- `app/(main)/resume-for-job/analysis/page.tsx` or analysis section in the flow.
-- Optional: reusable components for score display, gap list, recommendations.
-- Copy for ATS/AI explainer (can live in the same file or `content/` / `data/`).
+- `app/(main)/resume-for-job/analysis/page.tsx`
+- `app/(main)/resume-for-job/_components/analysis-view.tsx` (new)
+- `app/(main)/resume-for-job/_components/fit-score.tsx`, `gap-list.tsx` (optional)
+- `actions/resume-session.ts`
 
-**Commit message:** `feat: analysis result UI and build-resume CTA`
+**Commit:** `feat: analysis result UI and build-resume CTA`
 
 ---
 
-### Step 7: Resume generation (backend)
+### Step 7: ATS format check
 
-**Goal:** Generate structured resume JSON from job + resume text + analysis; persist in session. No PDF yet.
+**Goal:** Catch parse-breaking resume formats before analysis; educate user on fixes.
 
 **Tasks:**
 
-- [ ] **7.1** Define **resume schema** (e.g. in `types/resume-flow.ts`): one structure used for preview and PDF. Example: `{ summary: string, experience: { title, organization, startDate, endDate, bullets: string[] }[], education: same shape, skills: string[] }`. Add any sections you need (e.g. certifications).
-- [ ] **7.2** Create a function (e.g. `lib/resume/generateResume.ts`) that:
-  - Input: `jobTitle`, `jobDescription`, `resumeText`, `analysisResult` (from Step 5).
-  - Builds a **resume-generation prompt**: e.g. "Generate an ATS- and AI-screening-friendly resume. Use standard sections (Summary, Experience, Education, Skills). Incorporate missing keywords naturally. Match required experience where possible. Output only structured content (no layout)."
-  - Calls **only** `generateStructured<StructuredResume>(...)` with this prompt and the resume schema.
-  - Returns typed `StructuredResume`.
-- [ ] **7.3** Server action (e.g. `generateResumeForSession(sessionId)`): load session (job, parsed text, analysis), call the function above, save result to session (e.g. `generatedResumeJson`). Return success; client then navigates to preview or fetches the generated resume.
-- [ ] **7.4** Ensure the same schema is used in Step 8 (preview) and Step 10 (PDF). No second "export-only" shape.
+- [ ] **7.1** Extend `lib/pdf/parseResumePdf.ts` (or new `lib/pdf/checkResumeFormat.ts`) to detect warnings: very low text length (image scan), suspiciously short extract, optional heuristics for multi-column hints if detectable.
+- [ ] **7.2** Store format warnings on session (e.g. `formatWarnings Json?` on `ResumeSession`) or return inline from upload action.
+- [ ] **7.3** Show warnings on upload success and analysis page: "Your PDF may not parse well in ATS — use single-column, text-based PDF."
+- [ ] **7.4** Link to static tips in `data/ats-tips.ts`.
 
-**Files to create/update:**
+**Files:**
 
-- `types/resume-flow.ts` – `StructuredResume` type and schema for LLM.
-- `lib/resume/generateResume.ts` – calls LLM abstraction only.
-- Server action that loads session, runs generation, saves `generatedResumeJson`.
-- Prisma – `generatedResumeJson` (Json) on session model.
+- `lib/pdf/checkResumeFormat.ts`
+- `prisma/schema/resume_session.prisma` — optional `formatWarnings`
+- `resume-upload-form.tsx`, analysis UI
 
-**Commit message:** `feat: resume generation via LLM with structured schema`
+**Commit:** `feat: ATS format warnings on resume upload`
 
 ---
 
-### Step 8: Preview component + page
+### Step 8: Bullet-level rewrite suggestions
 
-**Goal:** Show the generated resume in the app using the same structured JSON that will drive the PDF.
+**Goal:** Highest-value differentiator — suggest specific bullet rewrites using JD keywords, grounded in user's existing experience.
 
 **Tasks:**
 
-- [ ] **8.1** Create a **ResumePreview** component that accepts the **StructuredResume** JSON (from Step 7). Render sections (summary, experience, education, skills) with clear typography and layout. Prefer semantic HTML and CSS; avoid complex tables/graphics so it stays ATS-style and matches PDF later.
-- [ ] **8.2** Add preview page/step (e.g. `resume-for-job/preview`). Load the session’s `generatedResumeJson` for the current user/session. If missing, redirect back to appropriate step or show "Generate resume first".
-- [ ] **8.3** Add a **"Download PDF"** button. For this step it can be disabled or show "Step 10 will enable download"; in Step 10 you will wire it to the PDF generator.
+- [ ] **8.1** Extend `AnalysisResult` in `types/resume-flow.ts`:
 
-**Files to create/update:**
+  ```ts
+  bulletRewrites: {
+    originalBullet: string;
+    suggestedBullet: string;
+    reason: string; // e.g. "Adds JD keyword 'Kubernetes'"
+  }[];
+  ```
 
-- `components/resume/ResumePreview.tsx` (or under `app/(main)/resume-for-job/`) – receives `StructuredResume`, renders layout.
-- `app/(main)/resume-for-job/preview/page.tsx` – loads session, passes `generatedResumeJson` to `ResumePreview`.
+- [ ] **8.2** Update `lib/resume/runAnalysis.ts` prompt: return 3–6 bullet rewrites; **only rephrase existing bullets**, never invent new roles or metrics.
+- [ ] **8.3** Display rewrites on analysis page: side-by-side original vs suggested; "Copy" button per suggestion.
+- [ ] **8.4** Persist in `analysisResult` JSON (no schema migration if using Json column).
 
-**Commit message:** `feat: resume preview from structured JSON`
+**Commit:** `feat: bullet-level rewrite suggestions in analysis`
 
 ---
 
-### Step 9: Edit and persist
+### Step 9: Anti-hallucination validator
 
-**Goal:** User can edit sections/bullets in the preview; changes persist to the session’s `generatedResumeJson`.
+**Goal:** Trust moat — reject or flag LLM output that introduces facts not in the resume.
 
 **Tasks:**
 
-- [ ] **9.1** On the preview page, make content **editable**: e.g. click to edit summary, experience bullets, education, skills. Use local state for the edited JSON, then on "Save" call a server action that updates the session’s `generatedResumeJson` in DB.
-- [ ] **9.2** Keep **one source of truth**: the same `StructuredResume` type. Preview and PDF both read from this; no separate "display" model.
-- [ ] **9.3** After save, show a brief "Saved" feedback and re-render preview from the updated data (refetch or use returned JSON).
+- [ ] **9.1** Create `lib/resume/validateGroundedContent.ts`:
+  - Input: `parsedResumeText`, `StructuredResume` or `bulletRewrites`
+  - Check: new employers, dates, numbers, or skills not found in source text (fuzzy match / keyword extraction)
+  - Output: `{ valid: boolean, violations: string[] }`
+- [ ] **9.2** Run validator after analysis and after resume generation; log violations server-side.
+- [ ] **9.3** If violations found: retry once with stricter prompt, or strip offending bullets and show user warning.
+- [ ] **9.4** UI badge: **"Grounded in your resume"** when validation passes.
 
-**Files to create/update:**
+**Files:**
 
-- Preview page or a wrapper component: add edit UI (inline or modal) and save action.
-- Server action: e.g. `updateResumeContent(sessionId, generatedResumeJson)` that updates the session row.
+- `lib/resume/validateGroundedContent.ts`
+- Wire into `runAnalysis` and `generateResume` (Step 10)
 
-**Commit message:** `feat: edit resume and persist to session`
+**Commit:** `feat: anti-hallucination validator for AI resume output`
 
 ---
 
-### Step 10: PDF download
+### Step 10: Tailored resume generation (backend)
 
-**Goal:** User can download a PDF that matches the preview layout, generated from the same structured JSON.
+**Goal:** Generate `StructuredResume` JSON from job + resume + analysis; persist in session.
 
 **Tasks:**
 
-- [ ] **10.1** Use `@react-pdf/renderer` (or another lib) to build a PDF from the **same** `StructuredResume` type. Reuse section/bullet structure so the PDF looks like the preview (same order, same content).
-- [ ] **10.2** Implement download flow: on "Download PDF", generate the PDF (server-side recommended: e.g. API route or server action that returns a blob or temporary URL). Client triggers download (e.g. `window.open` or blob download). If you prefer client-side PDF generation, ensure the same JSON is used and the output matches the preview.
-- [ ] **10.3** Do not store PDFs long-term unless you add storage later; for demo, "generate on demand and download" is enough. Optional: store in DB or object storage in a later iteration.
-- [ ] **10.4** Ensure encoding/fonts support required characters (e.g. basic Latin for English resumes).
+- [ ] **10.1** Define `StructuredResume` in `types/resume-flow.ts`:
 
-**Files to create/update:**
+  ```ts
+  {
+    summary: string;
+    experience: { title, organization, startDate, endDate, bullets: string[] }[];
+    education: { degree, institution, year }[];
+    skills: string[];
+  }
+  ```
 
-- `lib/pdf/buildResumePdf.ts` (or `components/resume/ResumePdfDocument.tsx` for react-pdf) – accepts `StructuredResume`, returns PDF buffer or blob.
-- API route or server action that loads session, gets `generatedResumeJson`, calls PDF builder, returns file or URL.
-- Preview page: wire "Download PDF" to this endpoint/action.
+- [ ] **10.2** Create `lib/resume/generateResume.ts` — prompt: ATS-friendly, incorporate missing keywords naturally, **reuse only facts from parsed resume and bullet rewrites**.
+- [ ] **10.3** Server action `generateResumeForSession(sessionId)` — load session, generate, run validator (Step 9), save `generatedResumeJson`.
+- [ ] **10.4** Route: `resume-for-job/build` — triggers generation with loading UI, redirects to preview.
 
-**Commit message:** `feat: PDF download from structured resume`
+**Commit:** `feat: tailored resume generation with structured schema`
 
 ---
 
-### Step 11: Errors and loading
+### Step 11: Preview + edit
 
-**Goal:** Every step has clear loading and error states; no silent failures.
+**Goal:** Show generated resume; user can edit and save.
 
 **Tasks:**
 
-- [ ] **11.1** **Loading:** Job form submit, upload+parse, analysis, resume generation, PDF download – show a spinner or message (e.g. "Analyzing your resume…", "Building your resume…").
-- [ ] **11.2** **Errors:** Handle and show messages for: invalid/missing job or resume, parse failure, LLM failure, session not found. Where possible, offer "Try again" or "Start over".
-- [ ] **11.3** **Validation:** Job title and JD required; PDF only and file size limit. Show validation errors next to the form or upload area. Server must also validate; never trust client only.
-- [ ] **11.4** Optional: global or layout-level error boundary for the resume flow so unhandled errors show a friendly message instead of a blank screen.
+- [ ] **11.1** `ResumePreview` component — renders `StructuredResume` with clean ATS-style typography.
+- [ ] **11.2** Preview page `resume-for-job/preview` — load session; redirect if no `generatedResumeJson`.
+- [ ] **11.3** Inline edit: summary, bullets, skills. Local state → **Save** calls `updateResumeContent(sessionId, json)`.
+- [ ] **11.4** Re-run grounded validator on save (warn if user adds unverifiable content — optional soft warning).
 
-**Files to create/update:**
+**Files:**
 
-- Relevant pages and components: add loading states and error UI.
-- Server actions: return `{ success: false, error: string }` or throw and catch in UI to show message.
+- `components/resume/ResumePreview.tsx`
+- `app/(main)/resume-for-job/preview/page.tsx`
+- `actions/resume-session.ts` — `updateResumeContent`
 
-**Commit message:** `feat: loading and error handling for resume flow`
+**Commit:** `feat: resume preview and inline edit`
 
 ---
 
-### Step 12: Demo polish and README
+### Step 12: PDF download
 
-**Goal:** End-to-end flow works; README describes the product and how to run it.
+**Goal:** Download PDF matching preview, from same `StructuredResume` JSON.
 
 **Tasks:**
 
-- [ ] **12.1** **Smoke test:** Sign up → onboarding → open "Resume for this job" → enter job details → upload PDF → see analysis → "Build my resume" → preview → edit → download. Fix any broken links, missing guards (e.g. redirect to job form if session is missing), or inconsistent state.
-- [ ] **12.2** **README:** Short project description (JobGinie), main demo flow ("Resume for this job": job details → upload → analysis → build → preview → edit → download). How to run (install, env vars from Step 0). Note "free APIs only" and "LLM provider configurable via env".
-- [ ] **12.3** Optionally in README: mention that some features (e.g. cover letter, interview prep) are hidden and will be added later.
+- [ ] **12.1** `lib/pdf/buildResumePdf.ts` or `components/resume/ResumePdfDocument.tsx` using `@react-pdf/renderer`.
+- [ ] **12.2** API route or server action: load session → build PDF buffer → return download.
+- [ ] **12.3** Wire **Download PDF** on preview page. Generate on demand; don't store PDFs long-term.
+- [ ] **12.4** Single-column layout; standard fonts; basic Latin support.
 
-**Files to update:**
-
-- `README.md`
-- Any route or redirect that was missing after smoke test.
-
-**Commit message:** `chore: demo polish and README update`
+**Commit:** `feat: PDF download from structured resume`
 
 ---
 
-## Implementation checklist (track progress)
+### Step 13: Application tracker
 
-| Step | Description                    | Done |
-|------|--------------------------------|------|
-| 0    | Prep (checklist, env)          | [x]  |
-| 1    | LLM abstraction (LangChain)    | [x]  |
-| 2    | Hide incomplete UI             | [x]  |
-| 3    | Job details form + route       | [x]  |
-| 4    | Resume upload + PDF parse      | [ ]  |
-| 5    | Fit + gap analysis (backend)   | [ ]  |
-| 6    | Analysis result UI             | [ ]  |
-| 7    | Resume generation (backend)    | [ ]  |
-| 8    | Preview component + page       | [ ]  |
-| 9    | Edit and persist               | [ ]  |
-| 10   | PDF download                   | [ ]  |
-| 11   | Errors and loading             | [ ]  |
-| 12   | Demo polish + README           | [ ]  |
+**Goal:** Retention + organization — every completed session appears in a tracker (Teal's core paid value, simplified).
+
+**Tasks:**
+
+- [ ] **13.1** Extend `ResumeSession` (or rename conceptually to **Application**):
+
+  ```prisma
+  companyName     String?   // optional, from job title or user input
+  status          ApplicationStatus @default(DRAFT)
+  // enum: DRAFT | ANALYZED | READY | APPLIED | INTERVIEW | REJECTED | OFFER
+  appliedAt       DateTime?
+  matchScore      Int?      // copy from analysisResult.fitScore when analyzed
+  ```
+
+- [ ] **13.2** Route: `app/(main)/applications/page.tsx` — list user's sessions as cards: job title, match %, status, date, link to analysis/preview.
+- [ ] **13.3** On PDF download or explicit **"Mark as applied"**, set status `APPLIED` and `appliedAt`.
+- [ ] **13.4** Update nav: **Applications** as primary signed-in home. Demote Industry Trends to secondary or remove from nav for Phase 1.
+- [ ] **13.5** Redirect onboarding → `/applications` (or `/resume-for-job`) instead of `/industry-trends`.
+
+**Files:**
+
+- `prisma/schema/resume_session.prisma`
+- `app/(main)/applications/page.tsx`
+- `actions/resume-session.ts` — `listApplications`, `updateApplicationStatus`
+- `components/header.tsx`
+
+**Commit:** `feat: application tracker with status pipeline`
+
+---
+
+### Step 14: Phase 1 polish + README (portfolio-ready)
+
+**Goal:** End-to-end demo works; README sells the project for recruiters and GitHub visitors.
+
+**Tasks:**
+
+- [ ] **14.1** Smoke test full flow: sign up → profile → new application → upload → analysis → rewrites → build → edit → download → tracker.
+- [ ] **14.2** README sections:
+  - Problem & solution (2 paragraphs)
+  - **Live demo** link (deploy to Vercel)
+  - Architecture diagram (optional mermaid)
+  - Tech stack table
+  - How to run locally (env vars)
+  - Key design decisions (LLM abstraction, anti-hallucination, structured output)
+  - Screenshots / GIF of main flow
+- [ ] **14.3** Update landing page copy (`data/features.tsx`, `howItWorks.tsx`) to match actual product — remove mock interview / job search claims until Phase 3.
+- [ ] **14.4** Error boundaries + consistent loading copy across all steps.
+- [ ] **14.5** Optional: `ARCHITECTURE.md` one-pager for portfolio depth.
+
+**Commit:** `chore: Phase 1 polish, README, and portfolio docs`
+
+---
+
+## Phase 2 — Differentiation (Steps 15–19)
+
+Build after Phase 1 is demo-ready.
+
+---
+
+### Step 15: Career profile (persistent memory)
+
+**Goal:** Merge onboarding data + parsed resumes into a reusable career profile that improves tailoring.
+
+**Tasks:**
+
+- [ ] **15.1** Extend `User` or new `CareerProfile` model: industry, skills, YOE, bio (from onboarding), plus optional `masterResumeText`.
+- [ ] **15.2** Pre-fill job application flow from profile; use profile context in LLM prompts.
+- [ ] **15.3** Reframe onboarding as **"Build your career profile"** — one-time setup.
+
+**Commit:** `feat: career profile as LLM context`
+
+---
+
+### Step 16: Naukri + LinkedIn export snippets
+
+**Goal:** India-specific value — export headline, key skills, summary tuned to the job.
+
+**Tasks:**
+
+- [ ] **16.1** After analysis, generate: Naukri headline (≤250 chars), key skills list, profile summary.
+- [ ] **16.2** LinkedIn headline + About snippet variant.
+- [ ] **16.3** UI: copy buttons per field; static tips for Naukri vs LinkedIn (`data/channel-tips.ts`).
+
+**Commit:** `feat: Naukri and LinkedIn profile snippets per application`
+
+---
+
+### Step 17: "Why I fit" paragraph
+
+**Goal:** Application kit includes a short paragraph for email, Naukri cover note, or recruiter DM — not a full cover letter product.
+
+**Tasks:**
+
+- [ ] **17.1** Generate 3–4 sentence paragraph from analysis + resume; store on session (`applicationBlurb String?`).
+- [ ] **17.2** Show on analysis/preview page with copy button.
+
+**Commit:** `feat: why-I-fit application paragraph`
+
+---
+
+### Step 18: Job-specific interview prep
+
+**Goal:** Questions derived from JD gaps + user's resume — high value, late-funnel.
+
+**Tasks:**
+
+- [ ] **18.1** `lib/resume/generateInterviewPrep.ts` — 5–8 likely questions + talking points grounded in user's experience.
+- [ ] **18.2** Route: `resume-for-job/interview-prep?sessionId=` — available when status ≥ `APPLIED` or always after analysis.
+- [ ] **18.3** Display Q&A cards; optional "practice mode" (user types answer, AI feedback — stretch).
+
+**Commit:** `feat: job-specific interview prep`
+
+---
+
+### Step 19: Contextual industry insights
+
+**Goal:** Repurpose Industry Trends as **in-flow context**, not standalone dashboard.
+
+**Tasks:**
+
+- [ ] **19.1** On analysis page: show salary band + in-demand skills for user's industry **relevant to this job title**.
+- [ ] **19.2** Reuse `IndustryInsight` data + existing Inngest cron; remove or hide standalone `/industry-trends` from primary nav.
+- [ ] **19.3** Disable standalone industry-trends code path if not needed, or keep as secondary "Insights" tab.
+
+**Commit:** `feat: contextual industry insights in application flow`
+
+---
+
+## Phase 3 — Extend & cleanup (Steps 20+)
+
+| Step | Feature | Notes |
+|------|---------|-------|
+| **20** | Mock interview | Only after Step 18; generic mock is low value |
+| **21** | Application analytics | Callback rate by match score, resume version |
+| **22** | Schema cleanup | Remove unused `Resume`, `CoverLetter`, `MockInterview`, `Assessment` models |
+| **23** | Optional caching | Hash-based analysis cache for identical job+resume |
+| **24** | Agentic / MCP | Chat-with-resume, only if core loop is solid |
+
+**Explicitly not planned for v1:** Auto-apply bots, job board aggregation, paid API dependencies.
+
+---
+
+## Implementation checklist
+
+| Step | Description | Phase | Done |
+|------|-------------|-------|------|
+| 0 | Prep (checklist, env) | Foundation | [x] |
+| 1 | LLM abstraction (LangChain) | Foundation | [x] |
+| 2 | Nav cleanup | Foundation | [x] |
+| 3 | Job details form + session | Foundation | [x] |
+| 4 | Resume upload + PDF parse | Foundation | [x] |
+| 5 | Fit + gap analysis (backend) | Foundation | [x] |
+| 6 | Analysis result UI | Phase 1 | [ ] ← **next** |
+| 7 | ATS format check | Phase 1 | [ ] |
+| 8 | Bullet-level rewrite suggestions | Phase 1 | [ ] |
+| 9 | Anti-hallucination validator | Phase 1 | [ ] |
+| 10 | Tailored resume generation | Phase 1 | [ ] |
+| 11 | Preview + edit | Phase 1 | [ ] |
+| 12 | PDF download | Phase 1 | [ ] |
+| 13 | Application tracker | Phase 1 | [ ] |
+| 14 | Polish + README (portfolio) | Phase 1 | [ ] |
+| 15 | Career profile | Phase 2 | [ ] |
+| 16 | Naukri / LinkedIn snippets | Phase 2 | [ ] |
+| 17 | "Why I fit" paragraph | Phase 2 | [ ] |
+| 18 | Job-specific interview prep | Phase 2 | [ ] |
+| 19 | Contextual industry insights | Phase 2 | [ ] |
+| 20+ | Extend & cleanup | Phase 3 | [ ] |
+
+---
+
+## User journey (Phase 1 target)
+
+```
+Sign up (Clerk)
+  → Career profile (industry, skills, YOE) — 2 min
+  → Applications dashboard (empty)
+  → "New application" → paste job title + JD
+  → Upload resume PDF (+ format warnings if any)
+  → Analysis: match score, gaps, bullet rewrites, ATS tips
+  → "Build tailored resume" → preview → edit → download PDF
+  → Mark applied → appears in tracker with match %
+```
 
 ---
 
 ## Prompt for implementing a single step
 
-When you want to implement **Step N**, use this prompt (fill N and the step title):
-
 ```
 Implement Step N: [step title] from implementation-plan.md.
 
-- Follow the "Tasks" and "Files to create/update" for Step N exactly.
-- Respect all "Architecture rules" and "Do / Don't" in the same document.
-- Use existing codebase patterns (e.g. Prisma, server actions, existing components).
-- After implementation, the deliverable and commit message from the plan should be satisfied.
+- Follow the "Tasks" and "Files" for Step N exactly.
+- Respect all Architecture rules (especially anti-hallucination for AI steps).
+- Use existing codebase patterns (Prisma, server actions, shadcn, lib/ layer).
+- After implementation, deliverable and commit message from the plan should be satisfied.
+- Do not implement steps from a later phase unless explicitly asked.
 ```
 
-You will implement step by step; after each step you will review, get feedback, address it, commit, then proceed to the next step.
+---
 
-**Phases (reminder):** Phase 1 = Steps 0–12 (resume flow, LangChain). Phase 2 = cleanup of unused/hidden feature code. Phase 3 = new features (agentic, MCP, etc.).
+## Tech stack reference (for README / resume)
+
+| Layer | Choice |
+|-------|--------|
+| Framework | Next.js 15 (App Router), React 19, TypeScript |
+| UI | shadcn/ui, Tailwind CSS, Recharts (insights) |
+| Auth | Clerk |
+| Database | PostgreSQL (Neon) + Prisma 7 |
+| AI | LangChain → Gemini (env-switchable) |
+| PDF | pdf-parse (input), @react-pdf/renderer (output) |
+| Jobs | Inngest (optional cron) |
+| Deploy | Vercel |
+
+**Phases reminder:** Foundation (0–5) done → **Phase 1 (6–14)** = shippable portfolio project → Phase 2 = differentiation → Phase 3 = extend.
