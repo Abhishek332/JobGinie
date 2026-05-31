@@ -46,3 +46,6 @@ next-env.d.ts
 # codebase-memory-mcp (regenerated locally via index_repository)
 .codebase-memory/
 !.codebase-memory/.gitattributes
+
+# Prisma 7 generated client
+/generated/prisma
