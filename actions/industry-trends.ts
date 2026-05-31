@@ -1,6 +1,6 @@
 'use server';
 
-import { checkUserAuth } from './validate-user-auth';
+import { withAuthGuard } from './with-auth';
 import type { IndustryInsight } from '@/generated/prisma/client';
 import { generateStructured } from '@/lib/llm';
 import { db } from '@/lib/prisma';
@@ -9,11 +9,10 @@ import {
   IndustryInsightSchemaForLLM,
 } from '@/llm-schemas/industryInsights.schema';
 
-export async function getIndustryTrends(
+/** Internal fetch — caller must already be authenticated. */
+export async function fetchIndustryTrends(
   industry: string,
 ): Promise<IndustryInsight | IndustryInsightFromLLM | null> {
-  await checkUserAuth();
-
   const existing = await db.industryInsight.findUnique({
     where: { industry },
   });
@@ -32,3 +31,7 @@ export async function getIndustryTrends(
     throw new Error('Failed to generate industry insights');
   }
 }
+
+export const getIndustryTrends = withAuthGuard(
+  async (_user, industry: string) => fetchIndustryTrends(industry),
+);

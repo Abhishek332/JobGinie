@@ -5,7 +5,7 @@ import Link from 'next/link';
 import React from 'react';
 
 import { Button } from './ui/button';
-import { checkUser } from '@/lib/checkUser';
+import { getOrCreateUserOrNull } from '@/actions/with-auth';
 
 interface NavTextWithIconProps {
   title: string;
@@ -33,7 +33,7 @@ const NavTextWithIcon = ({
 
 const Header = async () => {
   try {
-    await checkUser();
+    await getOrCreateUserOrNull();
   } catch (error) {
     console.error(error);
   }
