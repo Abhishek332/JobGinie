@@ -1,8 +1,7 @@
 'use server';
 
-import type { IndustryInsight } from '@prisma/client';
-
 import { checkUserAuth } from './validate-user-auth';
+import type { IndustryInsight } from '@/generated/prisma/client';
 import { generateStructured } from '@/lib/llm';
 import { db } from '@/lib/prisma';
 import {

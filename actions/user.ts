@@ -69,8 +69,6 @@ export async function updateUser(
 
     const res = await db.$transaction(
       async (tx) => {
-        // Inside the tx: ensure row exists (re-check for concurrent creators), then update user,
-        // then load the row again — same outcome as the previous create → update → findUnique flow.
         const stillMissing = !(await tx.industryInsight.findUnique({
           where: { industry: data.industry },
           select: { industry: true },
@@ -101,9 +99,7 @@ export async function updateUser(
         }
 
         const updatedUser = await tx.user.update({
-          where: {
-            id: dbUser.id,
-          },
+          where: { id: dbUser.id },
           data: {
             industry: data.industry,
             experience: data.experience,
@@ -118,15 +114,10 @@ export async function updateUser(
 
         return { updatedUser, industryInsights: industryInsightsAfter };
       },
-      {
-        timeout: 15000,
-      },
+      { maxWait: 10_000, timeout: 30_000 },
     );
 
-    return {
-      success: true,
-      ...res,
-    };
+    return { success: true, ...res };
   } catch (error) {
     console.error('Update User Error: ', (error as Error).message);
     return {

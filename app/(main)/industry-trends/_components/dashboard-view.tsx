@@ -1,5 +1,4 @@
 'use client';
-import { DemandLevel, IndustryInsight, MarketOutlook } from '@prisma/client';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
   Brain,
@@ -28,29 +27,32 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import type {
+  DemandLevel,
+  IndustryInsightView,
+  MarketOutlook,
+} from '@/types/industry-insight';
 
 interface DashboardViewProps {
-  insights: IndustryInsight & {
-    salaryRanges: { role: string; min: number; max: number; median: number }[];
-  };
+  insights: IndustryInsightView;
 }
 
 const DEMAND_LEVEL_COLORS = {
-  [DemandLevel.High]: 'bg-green-500',
-  [DemandLevel.Medium]: 'bg-yellow-500',
-  [DemandLevel.Low]: 'bg-red-500',
+  High: 'bg-green-500',
+  Medium: 'bg-yellow-500',
+  Low: 'bg-red-500',
 };
 
 const MARKET_OUTLOOK_INFO = {
-  [MarketOutlook.Positive]: {
+  Positive: {
     icon: TrendingUp,
     color: 'text-green-500',
   },
-  [MarketOutlook.Neutral]: {
+  Neutral: {
     icon: LineChart,
     color: 'text-yellow-500',
   },
-  [MarketOutlook.Negative]: {
+  Negative: {
     icon: TrendingDown,
     color: 'text-red-500',
   },
@@ -67,7 +69,7 @@ const DashboardView = ({ insights }: DashboardViewProps) => {
   );
 
   const { icon: OutlookIcon, color: outlookColor } =
-    MARKET_OUTLOOK_INFO[insights.marketOutlook as MarketOutlook];
+    MARKET_OUTLOOK_INFO[(insights.marketOutlook ?? 'Neutral') as MarketOutlook];
 
   // Format dates using date-fns
   const lastUpdatedDate = format(new Date(insights.lastUpdated), 'dd/MM/yyyy');
@@ -126,7 +128,9 @@ const DashboardView = ({ insights }: DashboardViewProps) => {
             <div className="text-2xl font-bold">{insights.demandLevel}</div>
             <div
               className={`mt-2 h-2 w-full rounded-full ${
-                DEMAND_LEVEL_COLORS[insights.demandLevel as DemandLevel]
+                DEMAND_LEVEL_COLORS[
+                  (insights.demandLevel ?? 'Medium') as DemandLevel
+                ]
               }`}
             />
           </CardContent>
