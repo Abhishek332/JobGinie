@@ -71,10 +71,18 @@ export async function generateStructuredWithLangChain<T = unknown>(
   }
 
   try {
-    return JSON.parse(text) as T;
+    return parseJsonFromLlmResponse(text) as T;
   } catch {
     throw new Error(
       `LLM response was not valid JSON: ${text.slice(0, 200)}...`,
     );
   }
+}
+
+/** Strip markdown fences and parse JSON — Gemini often wraps output in ```json blocks. */
+function parseJsonFromLlmResponse(text: string): unknown {
+  const trimmed = text.trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  const payload = (fenced?.[1] ?? trimmed).trim();
+  return JSON.parse(payload);
 }

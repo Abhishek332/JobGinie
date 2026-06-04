@@ -14,12 +14,15 @@ export type RunAnalysisInput = {
 };
 
 const analysisResultZodSchema = z.object({
-  fitScore: z.number().int().min(0).max(100),
+  fitScore: z.coerce
+    .number()
+    .transform((value) => Math.round(value))
+    .pipe(z.number().int().min(0).max(100)),
   missingKeywords: z.array(z.string()),
   skillGaps: z.array(z.string()),
   experienceGaps: z.array(z.string()),
   summaryParagraph: z.string().min(1),
-  topRecommendations: z.array(z.string()).min(3).max(5),
+  topRecommendations: z.array(z.string()).min(1).max(5),
 });
 
 function buildAnalysisPrompt(input: RunAnalysisInput): string {
